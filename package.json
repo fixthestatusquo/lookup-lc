@@ -33,6 +33,7 @@
     "esbuild": "^0.18.4",
     "esbuild-node-tsc": "^2.0.5",
     "level": "^8.0.0",
-    "minimist": "^1.2.6"
+    "minimist": "^1.2.6",
+    "node-schedule": "^2.1.1"
   }
 }
