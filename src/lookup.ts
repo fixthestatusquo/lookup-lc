@@ -15,30 +15,34 @@ const lookup = async (email: string) => {
   const hash = crypto.createHash('sha512').update(process.env.TRUST_SALT + ":" + email).digest('hex');
   try {
     await db.get(hash);
-    console.log("oo")
+    console.log("found")
     return true;
   } catch (_error) {
     const error = _error as Err;
     if (error.notFound) {
-console.log("aaa")
+    console.log("Not found")
       return false;
     } else {
       console.error("Aww, something went wrong", error)
-      throw error;
+      process.exit();
     }
   }
 }
 
-if (!argv.email) {
-  console.error("Add email address (--email=SOME_EMAIL)");
-  process.exit();
-} else {
-  lookup(argv.email);
+const isPaused = () => {
+  const date = new Date();
+  const hours: number = date.getHours();
+  const minutes: number = date.getMinutes();
+  return (hours === 17 && minutes >= 56) || (hours === 0 && minutes <= 2)
 }
 
-
-const email = argv.email
-console.log("kkk", email)
-
-
+if (!argv.email) {
+    console.error("Add email address (--email=SOME_EMAIL)");
+    process.exit();
+  } else if (isPaused()) {
+    console.log("Can't run lookup while updating database, pause 3 minutes");
+    setTimeout(() => lookup(argv.email), 1 * 60 * 1000)
+  } else {
+    lookup(argv.email);
+  }
 
