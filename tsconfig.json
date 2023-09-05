@@ -1,0 +1,29 @@
+{
+  // see https://www.typescriptlang.org/tsconfig to better understand tsconfigs
+  "compilerOptions": {
+    "module": "CommonJS",
+    "lib": ["esnext"],
+    "importHelpers": true,
+    "allowJs": false,
+    // output .d.ts declaration files for consumers
+    "declaration": true,
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "sourceMap": true,
+    "outDir": "build",
+    "rootDir": ".",
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true
+  },
+  "ts-node": {
+    "swc": true
+  }
+}
