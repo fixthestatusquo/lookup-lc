@@ -8,8 +8,6 @@ dotenv.config();
 
 const jobInterval = process.env.JOB_INTERVAL || '0 0 * * *'
 
-const db = new Level('./emails.db', { valueEncoding: 'json' });
-
 interface Record {
   email: null | string;
 }
@@ -51,6 +49,7 @@ const fetchHashes = async () => {
 }
 
 schedule.scheduleJob(jobInterval, async () => {
+  const db = new Level('./emails.db', { valueEncoding: 'json' });
   console.log(`Checking database at ${jobInterval}`);
   const data = await fetchHashes();
   for (const i in data) {
@@ -65,6 +64,7 @@ schedule.scheduleJob(jobInterval, async () => {
         console.log("yay", s);
       } else {
         console.error("Aww, something went wrong", error);
+        throw error;
       }
     }
   }
