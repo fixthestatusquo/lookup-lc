@@ -33,7 +33,7 @@ const isPaused = () => {
   const date = new Date();
   const hours: number = date.getHours();
   const minutes: number = date.getMinutes();
-  return (hours === 17 && minutes >= 56) || (hours === 0 && minutes <= 2)
+  return (hours === 23 && minutes > 59) || (hours === 0 && minutes < 2)
 }
 
 if (!argv.email) {
@@ -44,5 +44,6 @@ if (!argv.email) {
     setTimeout(() => lookup(argv.email), 1 * 60 * 1000)
   } else {
     lookup(argv.email);
-  }
+}
+
 
