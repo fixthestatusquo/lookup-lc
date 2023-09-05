@@ -2,12 +2,14 @@ import { Level } from "level";
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { Err } from './fetch';
+import minimist, { ParsedArgs } from 'minimist';
+
+const argv: ParsedArgs = minimist(process.argv.slice(2));
+const db = new Level('./emails.db', { valueEncoding: 'json' });
 
 dotenv.config();
 
-const db = new Level('./emails.db', { valueEncoding: 'json' });
-
-const email = 'robin.halfkann@lobbycontrol.de';
+// email = 'robin.halfkann@lobbycontrol.de';
 
 const lookup = async (email: string) => {
   const hash = crypto.createHash('sha512').update(process.env.TRUST_SALT + ":" + email).digest('hex');
@@ -27,7 +29,16 @@ console.log("aaa")
   }
 }
 
+if (!argv.email) {
+  console.error("Add email address (--email=SOME_EMAIL)");
+  process.exit();
+} else {
+  lookup(argv.email);
+}
 
 
-lookup(email);
+const email = argv.email
+console.log("kkk", email)
+
+
 
