@@ -1,10 +1,8 @@
 import { Level } from "level";
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { Err } from './fetch';
-import minimist, { ParsedArgs } from 'minimist';
+import { Err } from './update';
 
-const argv: ParsedArgs = minimist(process.argv.slice(2));
 const db = new Level('./emails.db', { valueEncoding: 'json' });
 
 dotenv.config();
@@ -29,21 +27,5 @@ const lookup = async (email: string) => {
   }
 }
 
-const isPaused = () => {
-  const date = new Date();
-  const hours: number = date.getHours();
-  const minutes: number = date.getMinutes();
-  return (hours === 23 && minutes > 59) || (hours === 0 && minutes < 2)
-}
-
-if (!argv.email) {
-    console.error("Add email address (--email=SOME_EMAIL)");
-    process.exit();
-  } else if (isPaused()) {
-    console.log("Can't run lookup while updating database, pause 3 minutes");
-    setTimeout(() => lookup(argv.email), 1 * 60 * 1000)
-  } else {
-    lookup(argv.email);
-}
-
+export default lookup;
 

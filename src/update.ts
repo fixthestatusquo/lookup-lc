@@ -48,25 +48,33 @@ const fetchHashes = async () => {
   }
 }
 
-schedule.scheduleJob(jobInterval, async () => {
-  const db = new Level('./emails.db', { valueEncoding: 'json' });
-  console.log(`Checking database at ${jobInterval}`);
-  const data = await fetchHashes();
-  for (const i in data) {
-    try {
-      await db.get(data[i]);
-    } catch (e) {
-      const error = e as Err;
-      if (error.notFound) {
-        console.log("Saving hash: ", data[i])
-        await db.put<string, Record>(data[i], { email: null }, {})
-        const s = await db.get(data[i]);
-        console.log("yay", s);
-      } else {
-        console.error("Aww, something went wrong", error);
-        throw error;
+const manualUpdate = () => {
+  console.log("manually updating");
+};
+
+const update = () => {
+const db = new Level('./emails.db', { valueEncoding: 'json' });
+  schedule.scheduleJob(jobInterval, async () => {
+    console.log(`Checking database at ${jobInterval}`);
+    const data = await fetchHashes();
+    for (const i in data) {
+      try {
+        await db.get(data[i]);
+      } catch (e) {
+        const error = e as Err;
+        if (error.notFound) {
+          console.log("Saving hash: ", data[i])
+          await db.put<string, Record>(data[i], { email: null }, {})
+          const s = await db.get(data[i]);
+          console.log("yay", s);
+        } else {
+          console.error("Aww, something went wrong", error);
+          process.exit();
+        }
       }
     }
-  }
-});
+  });
 
+}
+
+export { update, manualUpdate}
