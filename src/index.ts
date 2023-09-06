@@ -4,7 +4,23 @@ import { update, manualUpdate } from "./update";
 import dotenv from 'dotenv';
 import { Level } from "level";
 
-const db = new Level<string, any>(process.env.DB_PATH || './emails.db', { valueEncoding: 'json' });
+export interface DatabaseType<KeyType, ValueType> {
+  clear(): Promise<void>;
+  put(key: KeyType, value: ValueType, options?: any): Promise<void>;
+  get(key: KeyType, options?: any): Promise<ValueType>;
+}
+
+export interface Record {
+  email: null | string;
+}
+
+export interface  Err {
+      code: string;
+    notFound: boolean;
+    status: number;
+};
+
+const db = new Level<string, Record>(process.env.DB_PATH || './emails.db', { valueEncoding: 'json' });
 
 const argv: ParsedArgs = minimist(process.argv.slice(2));
 

@@ -2,20 +2,11 @@ import crypto from 'crypto';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import schedule from "node-schedule";
+import { Record, Err, DatabaseType } from "./index";
 
 dotenv.config();
 
 const jobInterval = process.env.JOB_INTERVAL || '0 0 * * *'
-
-interface Record {
-  email: null | string;
-}
-
-export interface  Err {
-      code: string;
-    notFound: boolean;
-    status: number;
-};
 
 const makeHeaders = () => {
   const key = process.env['TRUST_KEY'];
@@ -47,11 +38,26 @@ const fetchHashes = async () => {
   }
 }
 
-const manualUpdate = (db) => {
+const updateDB = async(db: DatabaseType<string, Record>, data: any) => {
+  db.clear();
+  for (const i in data) {
+    try {
+      await db.put(data[i], { email: null }, {})
+    } catch (e) {
+      const error = e as Err;
+      console.error("Something went wrong, database is not updated", error);
+      process.exit();
+    }
+  }
+}
+
+const manualUpdate = async (db: DatabaseType<string, Record>) => {
+  const data = await fetchHashes();
   console.log("manually updating");
+  updateDB(db, data);
 };
 
-const update = (db) => {
+const update = (db: DatabaseType<string, Record>) => {
   schedule.scheduleJob(jobInterval, async () => {
     console.log(`Checking database at ${jobInterval}`);
     const data = await fetchHashes();
@@ -62,7 +68,7 @@ const update = (db) => {
         const error = e as Err;
         if (error.notFound) {
           console.log("Saving hash: ", data[i])
-          await db.put<string, Record>(data[i], { email: null }, {})
+          await db.put(data[i], { email: null }, {})
           const s = await db.get(data[i]);
           console.log("yay", s);
         } else {

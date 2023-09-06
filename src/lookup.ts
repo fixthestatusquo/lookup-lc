@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { Err } from './update';
+import { Err } from "./index";
 
 dotenv.config();
 
