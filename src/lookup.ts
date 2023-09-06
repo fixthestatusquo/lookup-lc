@@ -1,12 +1,13 @@
+
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { Err, Record, DatabaseType } from "./index";
+import { Err, db } from "./db";
 
 dotenv.config();
 
 // email = 'robin.halfkann@lobbycontrol.de';
 
-const lookup = async (email: string, db: DatabaseType<string, Record>) => {
+const lookup = async (email: string) => {
   const hash = crypto.createHash('sha512').update(process.env.TRUST_SALT + ":" + email).digest('hex');
   try {
     await db.get(hash);

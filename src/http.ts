@@ -1,6 +1,8 @@
 import Fastify from 'fastify'
 import { fetchHashes, updateDB } from './update';
+import lookup from './lookup';
 import dotenv from 'dotenv';
+import { subscribe } from 'diagnostics_channel';
 
 dotenv.config();
 
@@ -20,29 +22,13 @@ const lookupSchema = {
 };
 
 
-const emailLookup = async (email: string, reply) => {
-  console.log("ivana, do the lookup here");
-  const result = { status: 200 };
-  console.log("ivana, do the lookup here");
-  let code = 200;
-  let details = {};
-  details = { action: { customFields: { isSubscribed: true } } };
-
-  console.log(`Return ${code}:`, details);
-  reply
-    .code(code)
-    .type ("application/json")
-//    .header("Content-Type", "application/json; charset=utf-8")
-  return details;
-};
-
 
 fastify.get(
   "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
   async (request: any, reply: any) => {
     const data = await fetchHashes();
 
-    // TO DO: What to return in try/catch?
+    // TO DO: What to return?
     try {
       updateDB(data);
       return "updated"
@@ -62,20 +48,38 @@ fastify.post(
   }
 );
 
-fastify.post(
-  "/lookup-trust", // XXX lets just have it at / ? We can always add a path using reverse proxy
-  { schema: lookupSchema },
-  async (request: any, reply: any) => {
-    return emailLookup(request.query.email,reply);
-  }
-);
+fastify.get('/trust-lookup', async (request, reply) => {
 
-fastify.get(
-  "/lookup-trust", // XXX lets just have it at / ? We can always add a path using reverse proxy
-  async (request: any, reply: any) => {
-    return emailLookup(request.query.email,reply);
+  try {
+    const email = request.query.email;
+    const isSubscribed = await lookup(email);
+
+    if (isSubscribed) {
+      reply.code(200).send({ message: 'Email exists in the trust system', email });
+    } else {
+      reply.code(200).send({ message: 'Email not found in the trust system', email });
+    }
+  } catch (error) {
+    reply.code(500).send({ error: 'Internal Server Error' });
   }
-);
+});
+
+// fastify.post(
+//   "/trust-lookup", // XXX lets just have it at / ? We can always add a path using reverse proxy
+//   { schema: lookupSchema },
+//   async (request: any, reply: any) => {
+//     console.log("Here", request)
+//     return emailLookup(request.query.email,reply);
+//   }
+// );
+
+// fastify.get(
+//   "/lookup-trust", // XXX lets just have it at / ? We can always add a path using reverse proxy
+//   async (request: any, reply: any) => {
+//     console.log(1, request, reply);
+//     return emailLookup(request.query.email,reply);
+//   }
+// );
 
 
 /*
@@ -90,8 +94,9 @@ fastify.route({
 const start = async () => {
   try {
     await fastify.listen({ port: process.env.PORT || 3000 });
+    console.log("Server up");
   } catch (err) {
-    fastify.log.error(err);
+    fastify.log.error("Server down:", err);
     process.exit(1);
   }
 };
