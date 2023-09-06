@@ -31,6 +31,11 @@ if (!argv.email && !argv.update && !argv.manually_update) {
   process.exit();
 }
 
+if (process.argv.length > 3) {
+  console.error("Can't run two processes at the same time!");
+  process.exit();
+}
+
 if (argv.email) lookup(argv.email, db);
 
 if (argv.update) {
