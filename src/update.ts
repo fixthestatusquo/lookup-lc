@@ -1,4 +1,3 @@
-import { Level } from "level";
 import crypto from 'crypto';
 import axios from 'axios';
 import dotenv from 'dotenv';
@@ -48,12 +47,11 @@ const fetchHashes = async () => {
   }
 }
 
-const manualUpdate = () => {
+const manualUpdate = (db) => {
   console.log("manually updating");
 };
 
-const update = () => {
-const db = new Level(process.env.DB_PATH || './emails.db', { valueEncoding: 'json' });
+const update = (db) => {
   schedule.scheduleJob(jobInterval, async () => {
     console.log(`Checking database at ${jobInterval}`);
     const data = await fetchHashes();
@@ -74,7 +72,6 @@ const db = new Level(process.env.DB_PATH || './emails.db', { valueEncoding: 'jso
       }
     }
   });
-
 }
 
 export { update, manualUpdate}
