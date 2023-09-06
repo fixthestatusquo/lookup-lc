@@ -7,7 +7,6 @@ const argv: ParsedArgs = minimist(process.argv.slice(2));
 
 dotenv.config();
 
-
 if (!argv.email && !argv.update && !argv.manually_update) {
   console.error("Add some param");
   process.exit();

@@ -53,7 +53,7 @@ const manualUpdate = () => {
 };
 
 const update = () => {
-const db = new Level('./emails.db', { valueEncoding: 'json' });
+const db = new Level(process.env.DB_PATH || './emails.db', { valueEncoding: 'json' });
   schedule.scheduleJob(jobInterval, async () => {
     console.log(`Checking database at ${jobInterval}`);
     const data = await fetchHashes();

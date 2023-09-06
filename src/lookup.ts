@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { Err } from './update';
 
-const db = new Level('./emails.db', { valueEncoding: 'json' });
+
 
 dotenv.config();
 
@@ -11,6 +11,7 @@ dotenv.config();
 
 const lookup = async (email: string) => {
   const hash = crypto.createHash('sha512').update(process.env.TRUST_SALT + ":" + email).digest('hex');
+  const db = new Level(process.env.DB_PATH || './emails.db', { valueEncoding: 'json' });
   try {
     await db.get(hash);
     console.log("found")
