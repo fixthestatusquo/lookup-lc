@@ -1,35 +1,36 @@
 import minimist, { ParsedArgs } from 'minimist';
-import lookup from "./lookup";
 import {start} from "./http";
-import { update, manualUpdate } from "./update";
+import { manualUpdate } from "./update";
 import dotenv from 'dotenv';
+import axios from 'axios';
 
 const argv: ParsedArgs = minimist(process.argv.slice(2));
 
 dotenv.config();
 
-// if (!argv.email && !argv.update && !argv.manually_update) {
-//   //run the server
-//   start ();
-// }
+(async () => {
 
-if (!argv.email && !argv.update && !argv.manually_update) {
+  if (!argv.email && !argv.update && !argv.manually_update) {
     console.error("Wrong params");
-  // help();
-  process.exit();
-}
+    // help();
+    process.exit();
+  }
 
+  if (process.argv.length > 3) {
+    console.error("Can't run two processes at the same time!");
+    process.exit();
+  }
 
-if (process.argv.length > 3) {
-  console.error("Can't run two processes at the same time!");
-  process.exit();
-}
+  await start();
 
-if (argv.email) lookup(argv.email);
+  if (argv.email) {
+    await axios.get(`http://127.0.0.1:3000/trust-lookup?email=${argv.email}`)
+  }
 
-if (argv.update) {
-  start();
-  update();
-}
+  if (argv.update) {
+    console.log("LL")
+    await axios.get(`http://127.0.0.1:3000/update`)
+  }
 
-if (argv.manually_update) manualUpdate();
+  if (argv.manually_update) manualUpdate();
+})();
