@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import schedule from "node-schedule";
-import { Record, Err, DatabaseType } from "./index";
+import { Err, db } from "./db";
 
 dotenv.config();
 
@@ -38,7 +38,7 @@ const fetchHashes = async () => {
   }
 }
 
-const updateDB = async(db: DatabaseType<string, Record>, data: any) => {
+const updateDB = async(data: any) => {
   db.clear();
   for (const i in data) {
     try {
@@ -51,33 +51,23 @@ const updateDB = async(db: DatabaseType<string, Record>, data: any) => {
   }
 }
 
-const manualUpdate = async (db: DatabaseType<string, Record>) => {
+const manualUpdate = async () => {
   const data = await fetchHashes();
   console.log("manually updating");
-  updateDB(db, data);
+  updateDB(data);
 };
 
-const update = (db: DatabaseType<string, Record>) => {
+const update = () => {
   schedule.scheduleJob(jobInterval, async () => {
     console.log(`Checking database at ${jobInterval}`);
-    const data = await fetchHashes();
-    for (const i in data) {
       try {
-        await db.get(data[i]);
-      } catch (e) {
-        const error = e as Err;
-        if (error.notFound) {
-          console.log("Saving hash: ", data[i])
-          await db.put(data[i], { email: null }, {})
-          const s = await db.get(data[i]);
-          console.log("yay", s);
-        } else {
-          console.error("Aww, something went wrong", error);
-          process.exit();
-        }
+        const response = await axios.get('http://127.0.0.1:3000/update');
+        console.log('Response:', response.data);
+      } catch (error) {
+        console.error('Error while updating database:', error);
+        process.exit();
       }
-    }
-  });
+    });
 }
 
-export { update, manualUpdate}
+export { update, manualUpdate, fetchHashes, updateDB}

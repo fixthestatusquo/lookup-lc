@@ -1,5 +1,13 @@
-// Require the framework and instantiate it
-const fastify = require("fastify")({ logger: true });
+import Fastify from 'fastify'
+import { fetchHashes, updateDB } from './update';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const fastify = Fastify({
+  logger: true
+});
+
 
 const lookupSchema = {
   body: {
@@ -12,7 +20,7 @@ const lookupSchema = {
 };
 
 
-const emailLookup = (email, reply) => {
+const emailLookup = async (email: string, reply) => {
   console.log("ivana, do the lookup here");
   const result = { status: 200 };
   console.log("ivana, do the lookup here");
@@ -32,8 +40,15 @@ const emailLookup = (email, reply) => {
 fastify.get(
   "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
   async (request: any, reply: any) => {
-    console.log("ivana, do the update here");
-    return "update";
+    const data = await fetchHashes();
+
+    // TO DO: What to return in try/catch?
+    try {
+      updateDB(data);
+      return "updated"
+    } catch (e) {
+      return e;
+    }
   }
 );
 
@@ -41,8 +56,9 @@ fastify.post(
   "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
   { schema: lookupSchema },
   async (request: any, reply: any) => {
-    console.log("ivana, do the update here");
-    return "update";
+    const data = await fetchHashes();
+    console.log(data.length);
+    return data;
   }
 );
 
@@ -80,4 +96,4 @@ const start = async () => {
   }
 };
 
-module.exports = { start };
+export { start };
