@@ -1,5 +1,14 @@
 # Lookup-lc
 
+1) start the http server 
+npm run start:dev 
+2) you can either do a lookup
+curl http://127.0.0.1:3000/trust-lookup?email=bla@example.org
+or
+3)
+update the database curl http://127.0.0.1:3000/update
+
+
 To update database `ts-node src/fetch.ts` (debug: `JOB_INTERVAL='* * * * *'` to run every minute)
 
 To run lookup `ts-node  src/lookup.ts --email=SOME_EMAIL`
