@@ -1,6 +1,6 @@
 import minimist, { ParsedArgs } from 'minimist';
 import {start} from "./http";
-import { manualUpdate } from "./update";
+import { update } from "./update";
 import dotenv from 'dotenv';
 import axios from 'axios';
 
@@ -27,10 +27,9 @@ dotenv.config();
     await axios.get(`http://127.0.0.1:3000/trust-lookup?email=${argv.email}`)
   }
 
-  if (argv.update) {
-    console.log("LL")
+  if (argv.manually_update) {
     await axios.get(`http://127.0.0.1:3000/update`)
   }
 
-  if (argv.manually_update) manualUpdate();
+  if (argv.update) update();
 })();
