@@ -41,7 +41,7 @@ fastify.post('/trust/lookup', async (request, reply) => {
   try {
     const email = request.query.email;
     const result = await remoteLookup(email);
-console.log(result);
+console.log(email, result);
     let r = {found:result};
     if (result) {
       r.action= {customFields: {isSubscribed: true}};
