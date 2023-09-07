@@ -10,6 +10,12 @@ const fastify = Fastify({
   logger: true
 });
 
+const formatResult = (found) => {
+  if (found) {
+    return {customer:{emailStatus:'already_subscribed'}, action: {customFields: {isSubscribed: true}}};
+  }
+  return {};
+}
 
 const lookupSchema = {
   body: {
@@ -35,18 +41,23 @@ console.log(e);
     }
   }
 );
+fastify.post('/test/lookup', async (request, reply) => {
+
+  try {
+    return formatResult (Math.random() < 0.5);
+  } catch (error) {
+console.log(error);
+    reply.code(500).send({ error: error.toString() });
+  }
+});
+
 
 fastify.post('/trust/lookup', async (request, reply) => {
 
   try {
     const email = request.query.email;
     const result = await remoteLookup(email);
-console.log(email, result);
-    let r = {found:result};
-    if (result) {
-      r.action= {customFields: {isSubscribed: true}};
-    }
-    return r;
+    return formatResult (result);
   } catch (error) {
 console.log(error);
     reply.code(500).send({ error: error.toString() });
@@ -58,11 +69,7 @@ fastify.post('/lookup', async (request, reply) => {
   try {
     const email = request.query.email;
     const isSubscribed = await lookup(email);
-    let r = {found:isSubscribed};
-    if (isSubscribed) {
-      r.action= {customFields: {isSubscribed: true}};
-    }
-    return r;
+    return formatResult (isSubscribed);
   } catch (error) {
 console.log(error);
     reply.code(500).send({ isError:true,error: error.toString(),found:false });
