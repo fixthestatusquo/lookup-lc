@@ -5,12 +5,7 @@ require('dotenv').config();
 const port = process.env.PORT || 3000;
 
 
-//  if (argv.email) {
-//    await axios.get(`http://127.0.0.1:${port}/trust-lookup?email=${argv.email}`)
-//  }
-
-emails.forEach (email => {
-https.get(`http://127.0.0.1:${port}/trust-lookup?email=${email}`, res => {
+https.get(`http://127.0.0.1:${port}/update`, res => {
   let data = [];
   const headerDate = res.headers && res.headers.date ? res.headers.date : 'no response date';
   console.log('Status Code:', res.statusCode);
@@ -27,5 +22,4 @@ console.log(response);
   });
 }).on('error', err => {
   console.log('Error: ', err.message);
-});
 });
