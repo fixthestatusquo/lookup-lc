@@ -1,25 +1,29 @@
 # Lookup-lc
 
-1) start the http server 
-./bin/start.js
- 
-2) you can either do a lookup
-./bin/lookup.js example.org second@test.org
+1. npm build
+2. start the http server 
 
-or
-3)
-./bin/update.js
+    ./bin/start.js
+
+open a separate console and  you can either do a lookup (of multiple emails)
 
 
-To update database `ts-node src/fetch.ts` (debug: `JOB_INTERVAL='* * * * *'` to run every minute)
+    ./bin/lookup.js example.org second@test.org
 
-To run lookup `ts-node  src/lookup.ts --email=SOME_EMAIL`
+or update 
+    ./bin/update.js
 
-Lookup returns:
+by default, the database is automatically updated at 5am
 
-- true if email in database
-- false when not found
-- error if anything goes wrong
+
+a successful lookup of an email that exits return:
+
+    {
+      customer: { emailStatus: 'already_subscribed' },
+      action: { customFields: { isSubscribed: true } }
+    }
+
+and an empty json otherwise
 
 ## Configuration
 
@@ -31,5 +35,5 @@ Lookup returns:
 
 ### Optional
 
-- `JOB_INTERVAL` - When to update database, default '0 0 \* \* \*' (00.00)
+- `JOB_INTERVAL` - When to update database, default '5 0 \* \* \*' (05.00)
 - `DB_PATH` - default './emails.db'
