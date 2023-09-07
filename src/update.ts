@@ -1,12 +1,9 @@
 import crypto from 'crypto';
 import axios from 'axios';
-import dotenv from 'dotenv';
 import schedule from "node-schedule";
 import { Err, db } from "./db";
 
-//dotenv.config();
-
-const jobInterval = process.env.JOB_INTERVAL || '5 0 * * *'
+const jobInterval = process.env.JOB_INTERVAL || '5 0 * * *';
 
 const makeHeaders = () => {
   const key = process.env['TRUST_KEY'];

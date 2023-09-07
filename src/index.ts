@@ -8,20 +8,22 @@ const argv: ParsedArgs = minimist(process.argv.slice(2));
 
 dotenv.config();
 const port = process.env.PORT || 3000;
+
 (async () => {
 
-  if (!argv.email && !argv.update && !argv.manually_update) {
+  if (!argv.email && !argv.update) {
     console.log("running the lookup server, you can use (on a separate console) email or update");
     await start();
     scheduleUpdate();
-    // help();
   }
 
   if (argv.email) {
-    await axios.get(`http://127.0.0.1:${port}/trust-lookup?email=${argv.email}`)
+    const email = argv.email;
+    await axios.post(`http://127.0.0.1:${port}/lookup?email=${email}`, { email: email })
   }
 
-  if (argv.manually_update) {
-    await axios.get(`http://127.0.0.1:${port}/update`)
+  // to manually run update
+  if (argv.update) {
+    await axios.post(`http://127.0.0.1:${port}/update`, {});
   }
 })();

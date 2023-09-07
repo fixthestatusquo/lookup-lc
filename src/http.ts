@@ -2,7 +2,6 @@ import Fastify from 'fastify'
 import { lookup as remoteLookup, updateDB } from './update';
 import lookup from './lookup';
 import dotenv from 'dotenv';
-import { subscribe } from 'diagnostics_channel';
 
 dotenv.config();
 
@@ -28,7 +27,6 @@ const lookupSchema = {
 };
 
 
-
 fastify.post(
   "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
   async (request: any, reply: any) => {
@@ -46,7 +44,7 @@ fastify.post('/test/lookup', async (request, reply) => {
   try {
     return formatResult (Math.random() < 0.5);
   } catch (error) {
-console.log(error);
+    console.log(error);
     reply.code(500).send({ error: error.toString() });
   }
 });
@@ -59,7 +57,7 @@ fastify.post('/trust/lookup', async (request, reply) => {
     const result = await remoteLookup(email);
     return formatResult (result);
   } catch (error) {
-console.log(error);
+    console.log(error);
     reply.code(500).send({ error: error.toString() });
   }
 });
@@ -71,7 +69,7 @@ fastify.post('/lookup', async (request, reply) => {
     const isSubscribed = await lookup(email);
     return formatResult (isSubscribed);
   } catch (error) {
-console.log(error);
+    console.log(error);
     reply.code(500).send({ isError:true,error: error.toString(),found:false });
   }
 });
