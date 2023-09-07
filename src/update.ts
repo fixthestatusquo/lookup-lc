@@ -68,12 +68,11 @@ export const updateDB = async() => {
   return {total:data.length};
 }
 
-
 export const scheduleUpdate = () => {
   console.log("going to update the database at",jobInterval);
   schedule.scheduleJob(jobInterval, async () => {
     console.log(`Checking database at ${jobInterval}`);
-    updateDB(data);
+    updateDB();
     });
 }
 

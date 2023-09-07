@@ -1,6 +1,6 @@
 import minimist, { ParsedArgs } from 'minimist';
 import {start} from "./http";
-import { update } from "./update";
+import { scheduleUpdate } from "./update";
 import dotenv from 'dotenv';
 import axios from 'axios';
 
@@ -13,6 +13,7 @@ const port = process.env.PORT || 3000;
   if (!argv.email && !argv.update && !argv.manually_update) {
     console.log("running the lookup server, you can use (on a separate console) email or update");
     await start();
+    scheduleUpdate();
     // help();
   }
 
@@ -23,7 +24,4 @@ const port = process.env.PORT || 3000;
   if (argv.manually_update) {
     await axios.get(`http://127.0.0.1:${port}/update`)
   }
-
-// what does that one do?
-  if (argv.update) update();
 })();
