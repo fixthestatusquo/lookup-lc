@@ -23,25 +23,11 @@ const lookupSchema = {
 
 
 
-fastify.get(
-  "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
-  async (request: any, reply: any) => {
-    // TO DO: What to return?
-    try {
-      const status = await updateDB(data);
-      return {isError:false, total: status.total};
-    } catch (e) {
-console.log(e);
-      return {isError:true, error:e.toString()};
-    }
-  }
-);
-
 fastify.post(
   "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
   async (request: any, reply: any) => {
     try {
-      const status = await updateDB(data);
+      const status = await updateDB();
       return {isError:false, total: status.total};
     } catch (e) {
 console.log(e);
@@ -50,63 +36,38 @@ console.log(e);
   }
 );
 
-fastify.get('/trust/lookup', async (request, reply) => {
+fastify.post('/trust/lookup', async (request, reply) => {
 
   try {
     const email = request.query.email;
     const result = await remoteLookup(email);
 console.log(result);
-    if (isSubscribed) {
-      reply.code(200).send({ message: 'Email exists in the trust system', email });
-    } else {
-      reply.code(200).send({ message: 'Email not found in the trust system', email });
+    let r = {found:result};
+    if (result) {
+      r.action= {customFields: {isSubscribed: true}};
     }
+    return r;
   } catch (error) {
-    reply.code(500).send({ error: 'Internal Server Error' });
+console.log(error);
+    reply.code(500).send({ error: error.toString() });
   }
 });
 
-fastify.get('/lookup', async (request, reply) => {
+fastify.post('/lookup', async (request, reply) => {
 
   try {
     const email = request.query.email;
     const isSubscribed = await lookup(email);
-
+    let r = {found:isSubscribed};
     if (isSubscribed) {
-      reply.code(200).send({ message: 'Email exists in the trust system', email });
-    } else {
-      reply.code(200).send({ message: 'Email not found in the trust system', email });
+      r.action= {customFields: {isSubscribed: true}};
     }
+    return r;
   } catch (error) {
-    reply.code(500).send({ error: 'Internal Server Error' });
+console.log(error);
+    reply.code(500).send({ isError:true,error: error.toString(),found:false });
   }
 });
-
-// fastify.post(
-//   "/trust-lookup", // XXX lets just have it at / ? We can always add a path using reverse proxy
-//   { schema: lookupSchema },
-//   async (request: any, reply: any) => {
-//     console.log("Here", request)
-//     return emailLookup(request.query.email,reply);
-//   }
-// );
-
-// fastify.get(
-//   "/lookup-trust", // XXX lets just have it at / ? We can always add a path using reverse proxy
-//   async (request: any, reply: any) => {
-//     console.log(1, request, reply);
-//     return emailLookup(request.query.email,reply);
-//   }
-// );
-
-
-/*
-fastify.route({
-  handler: async (request: any, reply: any) => {
-    return emailLookup(request.query.email);
-  },
-});
-*/
 
 // Run the server!
 const start = async () => {

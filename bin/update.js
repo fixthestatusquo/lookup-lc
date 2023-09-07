@@ -2,24 +2,16 @@
 
 const https = require('http');
 require('dotenv').config();
+const axios = require("axios");
 const port = process.env.PORT || 3000;
 
+  axios
+    .post(`http://127.0.0.1:${port}/update`,{})
+    .then((response) => {
+      console.log(response.data);
+      //    const response = JSON.parse(Buffer.concat(data).toString());
+    })
+    .catch((error) => {
+      console.log("Error: ", error);
+    });
 
-https.post(`http://127.0.0.1:${port}/update`, res => {
-  let data = [];
-  const headerDate = res.headers && res.headers.date ? res.headers.date : 'no response date';
-  console.log('Status Code:', res.statusCode);
-//  console.log('Date in Response header:', headerDate);
-
-  res.on('data', chunk => {
-    data.push(chunk);
-  });
-
-  res.on('end', () => {
-    console.log('Response ended: ');
-    const response = JSON.parse(Buffer.concat(data).toString());
-console.log(response);
-  });
-}).on('error', err => {
-  console.log('Error: ', err.message);
-});

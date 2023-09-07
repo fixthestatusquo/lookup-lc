@@ -22,7 +22,23 @@ const makeHeaders = () => {
   }
 }
 
+const fetchHashes = async () => {
+  if (!process.env.EMAILS_URL) {
+    console.error("Missing URL env variable");
+    return;
+  }
+  const url = process.env.EMAILS_URL;
+  try {
+    const { data, status } = await axios.get(url, makeHeaders());
+    console.log("Fetching data:", status);
+    return data;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
 
+//legacy remote fetch, this is what we are replacing
 export const lookup = async (email: string) => {
   if (!process.env.EMAILS_URL) {
     console.error("Missing EMAIL_URL env variable");
@@ -37,7 +53,8 @@ export const lookup = async (email: string) => {
   }
 }
 
-export const updateDB = async(data: any) => {
+export const updateDB = async() => {
+  const data = await fetchHashes();
   db.clear();
   for (const i in data) {
     try {
@@ -51,11 +68,6 @@ export const updateDB = async(data: any) => {
   return {total:data.length};
 }
 
-export const manualUpdate = async () => {
-//  const data = await fetchHashes();
-  console.log("manually updating");
-  updateDB(data);
-};
 
 export const scheduleUpdate = () => {
   console.log("going to update the database at",jobInterval);
