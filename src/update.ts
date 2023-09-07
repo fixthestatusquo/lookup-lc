@@ -22,23 +22,22 @@ const makeHeaders = () => {
   }
 }
 
-const fetchHashes = async () => {
+
+export const lookup = async (email: string) => {
   if (!process.env.EMAILS_URL) {
-    console.error("Missing URL env variable");
-    return;
+    console.error("Missing EMAIL_URL env variable");
+    throw new Error ("Missing EMAIL_URL env variable");
   }
-  const url = process.env.EMAILS_URL;
+  const url = process.env.LOOKUP_URL + email;
   try {
     const { data, status } = await axios.get(url, makeHeaders());
-    console.log("Fetching data:", status);
-    return data;
-  } catch (error) {
-    console.error(error);
-    throw error;
+    return {success: true, status:status, data:data};
+    } catch (error: any) {
+      return {success:false, status:error.response?.status, data: error.response};
   }
 }
 
-const updateDB = async(data: any) => {
+export const updateDB = async(data: any) => {
   db.clear();
   for (const i in data) {
     try {
@@ -52,13 +51,13 @@ const updateDB = async(data: any) => {
   return {total:data.length};
 }
 
-const manualUpdate = async () => {
+export const manualUpdate = async () => {
 //  const data = await fetchHashes();
   console.log("manually updating");
   updateDB(data);
 };
 
-const scheduleUpdate = () => {
+export const scheduleUpdate = () => {
   console.log("going to update the database at",jobInterval);
   schedule.scheduleJob(jobInterval, async () => {
     console.log(`Checking database at ${jobInterval}`);
@@ -66,4 +65,3 @@ const scheduleUpdate = () => {
     });
 }
 
-export { scheduleUpdate, manualUpdate, fetchHashes, updateDB}

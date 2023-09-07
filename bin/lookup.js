@@ -15,7 +15,7 @@ if (emails.length===0) {
 //  }
 
 emails.forEach (email => {
-https.get(`http://127.0.0.1:${port}/trust-lookup?email=${email}`, res => {
+https.get(`http://127.0.0.1:${port}/lookup?email=${email}`, res => {
   let data = [];
   const headerDate = res.headers && res.headers.date ? res.headers.date : 'no response date';
   console.log('Status Code:', res.statusCode);

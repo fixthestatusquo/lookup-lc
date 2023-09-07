@@ -1,5 +1,5 @@
 import Fastify from 'fastify'
-import { fetchHashes, updateDB } from './update';
+import { lookup as remoteLookup, updateDB } from './update';
 import lookup from './lookup';
 import dotenv from 'dotenv';
 import { subscribe } from 'diagnostics_channel';
@@ -26,8 +26,6 @@ const lookupSchema = {
 fastify.get(
   "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
   async (request: any, reply: any) => {
-    const data = await fetchHashes();
-
     // TO DO: What to return?
     try {
       const status = await updateDB(data);
@@ -41,15 +39,34 @@ console.log(e);
 
 fastify.post(
   "/update", // XXX lets just have it at / ? We can always add a path using reverse proxy
-  { schema: lookupSchema },
   async (request: any, reply: any) => {
-    const data = await fetchHashes();
-    console.log(data.length);
-    return data;
+    try {
+      const status = await updateDB(data);
+      return {isError:false, total: status.total};
+    } catch (e) {
+console.log(e);
+      return {isError:true, error:e.toString()};
+    }
   }
 );
 
-fastify.get('/trust-lookup', async (request, reply) => {
+fastify.get('/trust/lookup', async (request, reply) => {
+
+  try {
+    const email = request.query.email;
+    const result = await remoteLookup(email);
+console.log(result);
+    if (isSubscribed) {
+      reply.code(200).send({ message: 'Email exists in the trust system', email });
+    } else {
+      reply.code(200).send({ message: 'Email not found in the trust system', email });
+    }
+  } catch (error) {
+    reply.code(500).send({ error: 'Internal Server Error' });
+  }
+});
+
+fastify.get('/lookup', async (request, reply) => {
 
   try {
     const email = request.query.email;
