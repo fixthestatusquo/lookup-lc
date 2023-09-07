@@ -11,7 +11,7 @@ interface  Err {
     code: string;
     notFound: boolean;
     status: number;
-};
+}
 
 const db = new Level(process.env.DB_PATH || './emails.db', { valueEncoding: 'json' });
 
