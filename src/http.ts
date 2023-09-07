@@ -30,10 +30,11 @@ fastify.get(
 
     // TO DO: What to return?
     try {
-      updateDB(data);
-      return "updated"
+      const status = await updateDB(data);
+      return {isError:false, total: status.total};
     } catch (e) {
-      return e;
+console.log(e);
+      return {isError:true, error:e.toString()};
     }
   }
 );

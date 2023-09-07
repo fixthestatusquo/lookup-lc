@@ -4,9 +4,9 @@ import dotenv from 'dotenv';
 import schedule from "node-schedule";
 import { Err, db } from "./db";
 
-dotenv.config();
+//dotenv.config();
 
-const jobInterval = process.env.JOB_INTERVAL || '0 0 * * *'
+const jobInterval = process.env.JOB_INTERVAL || '5 0 * * *'
 
 const makeHeaders = () => {
   const key = process.env['TRUST_KEY'];
@@ -46,28 +46,24 @@ const updateDB = async(data: any) => {
     } catch (e) {
       const error = e as Err;
       console.error("Something went wrong, database is not updated", error);
-      process.exit();
+      throw error;
     }
   }
+  return {total:data.length};
 }
 
 const manualUpdate = async () => {
-  const data = await fetchHashes();
+//  const data = await fetchHashes();
   console.log("manually updating");
   updateDB(data);
 };
 
-const update = () => {
+const scheduleUpdate = () => {
+  console.log("going to update the database at",jobInterval);
   schedule.scheduleJob(jobInterval, async () => {
     console.log(`Checking database at ${jobInterval}`);
-      try {
-        const response = await axios.get('http://127.0.0.1:3000/update');
-        console.log('Response:', response.data);
-      } catch (error) {
-        console.error('Error while updating database:', error);
-        process.exit();
-      }
+    updateDB(data);
     });
 }
 
-export { update, manualUpdate, fetchHashes, updateDB}
+export { scheduleUpdate, manualUpdate, fetchHashes, updateDB}
