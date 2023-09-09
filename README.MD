@@ -25,6 +25,13 @@ a successful lookup of an email that exits return:
 
 and an empty json otherwise
 
+## endpoints
+
+- /lookup -> lookup on locale db (needs to run update at least once)
+- /test/lookup -> returns confirmed half of the time, not found the other half
+- /remote/lookup -> remote on the CRM (act as proxy), mostly to test
+- /update -> download from the CRM and update the local database
+
 ## Configuration
 
 ### Mandatory
