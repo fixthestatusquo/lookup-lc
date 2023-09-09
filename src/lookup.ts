@@ -1,44 +1,29 @@
-import { Level } from "level";
+
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { Err } from './fetch';
-import minimist, { ParsedArgs } from 'minimist';
-
-const argv: ParsedArgs = minimist(process.argv.slice(2));
-const db = new Level('./emails.db', { valueEncoding: 'json' });
+import { Err, db } from "./db";
 
 dotenv.config();
 
-// email = 'robin.halfkann@lobbycontrol.de';
+// email subscribed to newsletter = 'robin.halfkann@lobbycontrol.de';
 
 const lookup = async (email: string) => {
   const hash = crypto.createHash('sha512').update(process.env.TRUST_SALT + ":" + email).digest('hex');
   try {
     await db.get(hash);
-    console.log("oo")
+    console.log("found")
     return true;
   } catch (_error) {
     const error = _error as Err;
     if (error.notFound) {
-console.log("aaa")
+    console.log("Not found")
       return false;
     } else {
       console.error("Aww, something went wrong", error)
-      throw error;
+      process.exit();
     }
   }
 }
 
-if (!argv.email) {
-  console.error("Add email address (--email=SOME_EMAIL)");
-  process.exit();
-} else {
-  lookup(argv.email);
-}
-
-
-const email = argv.email
-console.log("kkk", email)
-
-
+export default lookup;
 
