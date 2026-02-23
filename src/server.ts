@@ -1,17 +1,29 @@
 import Fastify from "fastify";
 import dotenv from "dotenv";
-//import lookupRoutes from "./lookup.js";
+import httpRoutes from "./http";
 
 dotenv.config();
 
 const fastify = Fastify({
-  logger: true,
+  logger:
+    process.env.NODE_ENV === "development"
+      ? {
+          level: "debug",
+          transport: {
+            target: "pino-pretty", // pretty prints to console
+            options: {
+              colorize: true,
+              translateTime: "SYS:standard",
+            },
+          },
+        }
+      : true, // default logger in production
 });
 
 const start = async () => {
   try {
     // register routes
-    // fastify.register(lookupRoutes);
+    fastify.register(httpRoutes);
 
     // start server
     const port = Number(process.env.PORT) || 3000;
