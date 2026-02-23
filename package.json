@@ -1,14 +1,14 @@
 {
   "name": "@proca/trust-sync",
-  "version": "0.9.9",
+  "version": "1.0.0",
   "description": "",
-  "main": "bin/start.js",
+  "main": "build/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "eslint": "eslint src --ext .ts",
-    "esbuild": "NODE_ENV=production tsup-node",
-    "start:dev": "ts-node ./src/index.ts",
-    "build": "NODE_ENV=production etsc"
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node build/server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [],
   "author": "",
