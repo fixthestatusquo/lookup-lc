@@ -10,7 +10,7 @@ const fastify = Fastify({
       ? {
           level: "debug",
           transport: {
-            target: "pino-pretty", // pretty prints to console
+            target: "pino-pretty",
             options: {
               colorize: true,
               translateTime: "SYS:standard",
