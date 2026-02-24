@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import "./sentry";
 import dotenv from "dotenv";
 import httpRoutes from "./http";
 

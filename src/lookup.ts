@@ -1,5 +1,7 @@
+import { captureError } from "./sentry";
 import { BrevoClient } from "@getbrevo/brevo";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const brevoKey = process.env.BREVO_KEY;
@@ -16,6 +18,7 @@ export const lookup = async (email: string): Promise<boolean> => {
   } catch (err: any) {
     // Brevo returns 404 for contact not found
     if (err.statusCode === 404) return false;
+    captureError(err, { email, action: "lookup" });
     throw err;
   }
 };
