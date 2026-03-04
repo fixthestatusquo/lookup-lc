@@ -1,52 +1,81 @@
-# Lookup-lc
+# Lookup
 
-1. npm build
-2. start the http server 
+A small Node.js Fastify service to check if an email is already subscribed to your newsletter.
 
-    ./bin/start.js
+## Features
 
-open a separate console and  you can either do a lookup (of multiple emails)
+- Lookup if an email is already subscribed (`/lookup`)
+- Returns structured result, built with TypeScript
 
+## Installation
 
-    ./bin/lookup.js example.org second@test.org
+Clone the repo and install dependencies:
 
+```bash
+git clone <repo-url>
+cd lookup
+npm install
+```
 
-a successful lookup of an email that exits return:
+Create a `.env` file, BREVO_KEY is needed.
 
-    {
-      customer: { emailStatus: 'already_subscribed' },
-      action: { customFields: { isSubscribed: true } }
-    }
+## Development
 
-and an empty json otherwise
+Start the server in development mode:
 
-there are a bunch of bin that are simple wrappers around the http endpoints (cf below)
+```bash
+npm run dev
+```
 
-    ./bin/update.js
-    ./bin/remotelookup.js
-    ./bin/testlookup.js
+### Test Lookup
 
-by default (if you don't stop bin/start.js), the database is automatically updated at 5am
+You can test the lookup endpoint:
 
+```bash
+curl -X POST "http://localhost:3000/lookup?email=brucewayne@example.com"
+```
 
-## endpoints
+Example response if subscribed:
 
-there are all http post
+```json
+{
+  "customer": { "emailStatus": "already_subscribed" },
+  "action": { "customFields": { "isSubscribed": true } }
+}
+```
 
-- /lookup -> lookup on locale db (needs to run update at least once)
-- /test/lookup -> returns confirmed half of the time, not found the other half
-- /remote/lookup -> remote on the CRM (act as proxy), mostly to test
-- /update -> download from the CRM and update the local database
+If not subscribed:
 
-## Configuration
+```json
+{}
+```
 
-### Mandatory
+## Build for Production
 
-- `TRUST_KEY` - Trust CRM API key
-- `TRUST_SALT`
-- `EMAILS_URL` - Trust newsletter list
+```bash
+npm run build
+```
 
-### Optional
+This will compile TypeScript into `dist/`.
 
-- `JOB_INTERVAL` - When to update database, default '5 0 \* \* \*' (05.00)
-- `DB_PATH` - default './emails.db'
+Run production server:
+
+```bash
+node dist/server.js
+```
+
+## Deployment
+
+TBD
+
+## Endpoints
+
+- `POST /lookup?email=<email>` – Returns subscription status for the given email.
+
+## Notes
+
+- It is implemented only for LC
+
+## Extending for other organizations
+
+Looks like that elixir when using lookup can pass data other than just email - supporter_id, org_id, action_page_id, and custom_fields (needs to be confirmed). This allows implementing org-specific logic in the future without changing the core. For example, we could branch behavior based on org_id or apply custom rules per organization while still using the same endpoint for the basic email subscription check.
