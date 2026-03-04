@@ -1,38 +1,29 @@
-import { captureError } from "./sentry";
-import { BrevoClient } from "@getbrevo/brevo";
-import dotenv from "dotenv";
+
+import crypto from 'crypto';
+import dotenv from 'dotenv';
+import { Err, db } from "./db";
 
 dotenv.config();
 
-const brevoKey = process.env.BREVO_KEY;
-if (!brevoKey) {
-  throw new Error("BREVO_KEY environment variable is required");
+// email subscribed to newsletter = 'robin.halfkann@lobbycontrol.de';
+
+const lookup = async (email: string) => {
+  const hash = crypto.createHash('sha512').update(process.env.TRUST_SALT + ":" + email).digest('hex');
+  try {
+    await db.get(hash);
+    console.log("found")
+    return true;
+  } catch (_error) {
+    const error = _error as Err;
+    if (error.notFound) {
+    console.log("Not found")
+      return false;
+    } else {
+      console.error("Aww, something went wrong", error)
+      process.exit();
+    }
+  }
 }
 
-const client = new BrevoClient({ apiKey: brevoKey });
-
-export const lookup = async (email: string): Promise<boolean> => {
-  try {
-    const result = await client.contacts.getContactInfo({ identifier: email });
-    return result?.emailBlacklisted === false;
-  } catch (err: any) {
-    // Brevo returns 404 for contact not found
-    if (err.statusCode === 404) return false;
-    captureError(err, { email, action: "lookup" });
-    throw err;
-  }
-};
-
-export const formatResult = (found: boolean) => {
-  if (found) {
-    return {
-      customer: { emailStatus: "already_subscribed" },
-      action: { customFields: { isSubscribed: true } },
-    };
-  }
-  return {};
-};
-
-// lookup("sync+2@proca.app");
-
 export default lookup;
+
