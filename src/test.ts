@@ -1,7 +1,7 @@
 const email = process.argv[2];
 
 if (!email) {
-  console.error("Usage: ts-node test-lookup-cli.ts <email>");
+  console.error("Usage: ts-node src/test.ts <email>");
   process.exit(1);
 }
 

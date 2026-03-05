@@ -18,14 +18,15 @@ const client = new BrevoClient({ apiKey: brevoKey });
 export const lookup = async (email: string): Promise<boolean> => {
   try {
     const result = await client.contacts.getContactInfo({ identifier: email });
+
+    console.log(`Lookup result for ${email}:`, result);
     return (
       result?.emailBlacklisted === false &&
       result?.listIds?.includes(LIST_ID) === true
     );
-  } catch (err: unknown) {
+  } catch (err: any) {
     // Brevo returns 404 for contact not found
-    if (err && typeof err === "object" && "status" in err && err.status === 404)
-      return false;
+    if (err.statusCode === 404) return false;
     captureError(err, { email, action: "lookup" });
     throw err;
   }
