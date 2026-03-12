@@ -32,7 +32,7 @@ npm run dev
 You can test the lookup endpoint:
 
 ```bash
-curl -X POST "http://localhost:3000/lookup?email=brucewayne@example.com"
+curl -X POST "http://localhost:5001/lookup?email=brucewayne@example.com"
 ```
 
 Example response if subscribed:
