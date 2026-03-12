@@ -35,6 +35,12 @@ You can test the lookup endpoint:
 curl -X POST "http://localhost:5001/lookup?email=brucewayne@example.com"
 ```
 
+or
+
+```bash
+node src/test.ts brucewayne@example.com
+```
+
 Example response if subscribed:
 
 ```json
