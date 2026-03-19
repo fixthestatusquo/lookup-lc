@@ -22,11 +22,13 @@ export const lookup = async (email: string): Promise<boolean> => {
     console.log(`Lookup result for ${email}:`, result);
     return (
       result?.emailBlacklisted === false &&
-      result?.listIds?.includes(LIST_ID) === true
+      result?.listIds?.includes(LIST_ID) === true &&
+      (result?.attributes as Record<string, string>)?.["DOUBLE_OPT-IN"] === "1"
     );
-  } catch (err: any) {
+  } catch (err) {
     // Brevo returns 404 for contact not found
-    if (err.statusCode === 404) return false;
+    if ((err as Record<string, number | undefined>).statusCode === 404)
+      return false;
     captureError(err, { email, action: "lookup" });
     throw err;
   }
@@ -41,7 +43,5 @@ export const formatResult = (found: boolean) => {
   }
   return {};
 };
-
-// lookup("brucewayne@example.com");
 
 export default lookup;
