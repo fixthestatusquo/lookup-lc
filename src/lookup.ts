@@ -38,7 +38,10 @@ export const formatResult = (found: boolean) => {
   if (found) {
     return {
       customer: { emailStatus: "already_subscribed" },
-      action: { customFields: { isSubscribed: true } },
+      action: {
+        customFields: { isSubscribed: true },
+        privacy: { optIn: true },
+      },
     };
   }
   return {};
