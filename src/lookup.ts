@@ -19,7 +19,6 @@ export const lookup = async (email: string): Promise<boolean> => {
   try {
     const result = await client.contacts.getContactInfo({ identifier: email });
 
-    console.log(`Lookup result for ${email}:`, result);
     return (
       result?.emailBlacklisted === false &&
       result?.listIds?.includes(LIST_ID) === true &&
