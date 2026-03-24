@@ -41,7 +41,6 @@ export const formatResult = (found: boolean) => {
       action: {
         customFields: { isSubscribed: true },
       },
-      privacy: { optIn: true },
     };
   }
   return {};
