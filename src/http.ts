@@ -3,7 +3,7 @@ import lookup, { formatResult } from "./lookup";
 
 const fetch = async (request, reply) => {
   try {
-    const email = (request.query as any)?.email;
+    const email = (request.query as any)?.email || (request.body as any)?.email;
     if (!email) {
       return reply.code(400).send({ error: "email query param required" });
     }
