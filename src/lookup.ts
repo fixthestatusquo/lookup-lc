@@ -37,8 +37,11 @@ export const lookup = async (email: string): Promise<boolean> => {
 export const formatResult = (found: boolean) => {
   if (found) {
     return {
-      privacy: { optIn: true, emailStatus: "already_subscribed" },
-      action: { customFields: { isSubscribed: true } },
+      customer: { emailStatus: "already_subscribed" },
+      action: {
+        customFields: { isSubscribed: true },
+      },
+      privacy: { optIn: true },
     };
   }
   return {};
