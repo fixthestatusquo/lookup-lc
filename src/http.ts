@@ -5,13 +5,8 @@ const fetch = async (request, reply) => {
   try {
     const email = (request.query as any)?.email || (request.body as any)?.email;
     if (!email) {
-      console.warn(
-        "missing email - body:",
-        request.body,
-        "query:",
-        request.query,
-      );
-      return reply.code(400).send({ error: "email query param required" });
+      console.warn("missing email:", request.body || request.query);
+      return {};
     }
 
     const isSubscribed = await lookup(email);
