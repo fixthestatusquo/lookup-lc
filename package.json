@@ -2,11 +2,11 @@
   "name": "@proca/trust-sync",
   "version": "1.0.0",
   "description": "",
-  "main": "build/server.js",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx src/server.ts",
     "build": "NODE_ENV=production node esbuild.config.js",
-    "start": "node build/server.js",
+    "start": "node dist/server.js",
     "start:prod": "NODE_ENV=production node dist/server.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
