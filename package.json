@@ -1,7 +1,6 @@
 {
-  "name": "@proca/trust-sync",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@proca/lookup",
+  "version": "3.0.0",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx src/server.ts",
