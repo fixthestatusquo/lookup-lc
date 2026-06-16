@@ -1,4 +1,4 @@
-import { FastifyPluginAsync, log } from "fastify";
+import { FastifyPluginAsync } from "fastify";
 import lookup, { formatResult } from "./lookup/index";
 
 const fetch = async (request, reply) => {
