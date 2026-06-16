@@ -9,11 +9,20 @@ var __typeError = (msg) => {
   throw TypeError(msg);
 };
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+var __esm = (fn, res, err) => function __init() {
+  if (err) throw err[0];
+  try {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  } catch (e) {
+    throw err = [e], e;
+  }
 };
 var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e) {
+    throw mod = 0, e;
+  }
 };
 var __export = (target, all) => {
   for (var name in all)
@@ -84745,7 +84754,7 @@ function fromJson(text, reviver) {
 
 // node_modules/@getbrevo/brevo/dist/esm/errors/BrevoError.mjs
 var BrevoError = class extends Error {
-  constructor({ message, statusCode, body, rawResponse }) {
+  constructor({ message, statusCode, body, rawResponse, cause }) {
     super(buildMessage({ message, statusCode, body }));
     Object.setPrototypeOf(this, new.target.prototype);
     if (Error.captureStackTrace) {
@@ -84755,6 +84764,9 @@ var BrevoError = class extends Error {
     this.statusCode = statusCode;
     this.body = body;
     this.rawResponse = rawResponse;
+    if (cause != null) {
+      this.cause = cause;
+    }
   }
 };
 function buildMessage({ message, statusCode, body }) {
@@ -84773,13 +84785,16 @@ function buildMessage({ message, statusCode, body }) {
 
 // node_modules/@getbrevo/brevo/dist/esm/errors/BrevoTimeoutError.mjs
 var BrevoTimeoutError = class extends Error {
-  constructor(message) {
+  constructor(message, opts) {
     super(message);
     Object.setPrototypeOf(this, new.target.prototype);
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
     }
     this.name = this.constructor.name;
+    if ((opts === null || opts === void 0 ? void 0 : opts.cause) != null) {
+      this.cause = opts.cause;
+    }
   }
 };
 
@@ -85515,15 +85530,15 @@ function getRequestBody(_a3) {
 }
 
 // node_modules/@getbrevo/brevo/dist/esm/core/fetcher/Headers.mjs
-var Headers;
+var Headers2;
 if (typeof globalThis.Headers !== "undefined") {
-  Headers = globalThis.Headers;
+  Headers2 = globalThis.Headers;
 } else {
-  Headers = class Headers2 {
+  Headers2 = class Headers3 {
     constructor(init3) {
       this.headers = /* @__PURE__ */ new Map();
       if (init3) {
-        if (init3 instanceof Headers2) {
+        if (init3 instanceof Headers3) {
           init3.forEach((value, key) => this.append(key, value));
         } else if (Array.isArray(init3)) {
           for (const [key, value] of init3) {
@@ -85642,7 +85657,20 @@ var __awaiter6 = function(thisArg, _arguments, P, generator) {
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 };
-var makeRequest = (fetchFn, url, method, headers, requestBody, timeoutMs, abortSignal, withCredentials, duplex) => __awaiter6(void 0, void 0, void 0, function* () {
+var _cacheNoStoreSupported;
+function isCacheNoStoreSupported() {
+  if (_cacheNoStoreSupported != null) {
+    return _cacheNoStoreSupported;
+  }
+  try {
+    new Request("http://localhost", { cache: "no-store" });
+    _cacheNoStoreSupported = true;
+  } catch (_a3) {
+    _cacheNoStoreSupported = false;
+  }
+  return _cacheNoStoreSupported;
+}
+var makeRequest = (fetchFn, url, method, headers, requestBody, timeoutMs, abortSignal, withCredentials, duplex, disableCache) => __awaiter6(void 0, void 0, void 0, function* () {
   const signals = [];
   let timeoutAbortId;
   if (timeoutMs != null) {
@@ -85654,7 +85682,7 @@ var makeRequest = (fetchFn, url, method, headers, requestBody, timeoutMs, abortS
     signals.push(abortSignal);
   }
   const newSignals = anySignal(signals);
-  const response = yield fetchFn(url, {
+  const response = yield fetchFn(url, Object.assign({
     method,
     headers,
     body: requestBody,
@@ -85662,7 +85690,7 @@ var makeRequest = (fetchFn, url, method, headers, requestBody, timeoutMs, abortS
     credentials: withCredentials ? "include" : void 0,
     // @ts-ignore
     duplex
-  });
+  }, disableCache && isCacheNoStoreSupported() ? { cache: "no-store" } : {}));
   if (timeoutAbortId != null) {
     clearTimeout(timeoutAbortId);
   }
@@ -85671,7 +85699,7 @@ var makeRequest = (fetchFn, url, method, headers, requestBody, timeoutMs, abortS
 
 // node_modules/@getbrevo/brevo/dist/esm/core/fetcher/RawResponse.mjs
 var abortRawResponse = {
-  headers: new Headers(),
+  headers: new Headers2(),
   redirected: false,
   status: 499,
   statusText: "Client Closed Request",
@@ -85679,7 +85707,7 @@ var abortRawResponse = {
   url: ""
 };
 var unknownRawResponse = {
-  headers: new Headers(),
+  headers: new Headers2(),
   redirected: false,
   status: 0,
   statusText: "Unknown Error",
@@ -85828,7 +85856,7 @@ var SENSITIVE_HEADERS = /* @__PURE__ */ new Set([
 ]);
 function redactHeaders(headers) {
   const filtered = {};
-  for (const [key, value] of headers instanceof Headers ? headers.entries() : Object.entries(headers)) {
+  for (const [key, value] of headers instanceof Headers2 ? headers.entries() : Object.entries(headers)) {
     if (SENSITIVE_HEADERS.has(key.toLowerCase())) {
       filtered[key] = "[REDACTED]";
     } else {
@@ -85926,8 +85954,8 @@ function redactUrl(url) {
 function getHeaders(args) {
   return __awaiter8(this, void 0, void 0, function* () {
     var _a3;
-    const newHeaders = new Headers();
-    newHeaders.set("Accept", args.responseType === "json" ? "application/json" : args.responseType === "text" ? "text/plain" : "*/*");
+    const newHeaders = new Headers2();
+    newHeaders.set("Accept", args.responseType === "json" ? "application/json" : args.responseType === "text" ? "text/plain" : args.responseType === "sse" ? "text/event-stream" : "*/*");
     if (args.body !== void 0 && args.contentType != null) {
       newHeaders.set("Content-Type", args.contentType);
     }
@@ -85971,7 +85999,7 @@ function fetcherImpl(args) {
     }
     try {
       const response = yield requestWithRetries(() => __awaiter8(this, void 0, void 0, function* () {
-        return makeRequest(fetchFn, url, args.method, headers, requestBody, args.timeoutMs, args.abortSignal, args.withCredentials, args.duplex);
+        return makeRequest(fetchFn, url, args.method, headers, requestBody, args.timeoutMs, args.abortSignal, args.withCredentials, args.duplex, args.responseType === "streaming" || args.responseType === "sse");
       }), args.maxRetries);
       if (response.status >= 200 && response.status < 400) {
         if (logger.isDebug()) {
@@ -86023,7 +86051,8 @@ function fetcherImpl(args) {
           ok: false,
           error: {
             reason: "unknown",
-            errorMessage: "The user aborted a request"
+            errorMessage: "The user aborted a request",
+            cause: error3
           },
           rawResponse: abortRawResponse
         };
@@ -86039,7 +86068,8 @@ function fetcherImpl(args) {
         return {
           ok: false,
           error: {
-            reason: "timeout"
+            reason: "timeout",
+            cause: error3
           },
           rawResponse: abortRawResponse
         };
@@ -86056,7 +86086,8 @@ function fetcherImpl(args) {
           ok: false,
           error: {
             reason: "unknown",
-            errorMessage: error3.message
+            errorMessage: error3.message,
+            cause: error3
           },
           rawResponse: unknownRawResponse
         };
@@ -86073,7 +86104,8 @@ function fetcherImpl(args) {
         ok: false,
         error: {
           reason: "unknown",
-          errorMessage: toJson(error3)
+          errorMessage: toJson(error3),
+          cause: error3
         },
         rawResponse: unknownRawResponse
       };
@@ -86197,6 +86229,72 @@ var HttpResponsePromise = class _HttpResponsePromise extends Promise {
   }
 };
 
+// node_modules/@getbrevo/brevo/dist/esm/core/url/join.mjs
+function join4(base, ...segments) {
+  if (!base) {
+    return "";
+  }
+  if (segments.length === 0) {
+    return base;
+  }
+  if (base.includes("://")) {
+    let url;
+    try {
+      url = new URL(base);
+    } catch (_a3) {
+      return joinPath(base, ...segments);
+    }
+    const lastSegment = segments[segments.length - 1];
+    const shouldPreserveTrailingSlash = lastSegment === null || lastSegment === void 0 ? void 0 : lastSegment.endsWith("/");
+    for (const segment of segments) {
+      const cleanSegment = trimSlashes(segment);
+      if (cleanSegment) {
+        url.pathname = joinPathSegments(url.pathname, cleanSegment);
+      }
+    }
+    if (shouldPreserveTrailingSlash && !url.pathname.endsWith("/")) {
+      url.pathname += "/";
+    }
+    return url.toString();
+  }
+  return joinPath(base, ...segments);
+}
+function joinPath(base, ...segments) {
+  if (segments.length === 0) {
+    return base;
+  }
+  let result = base;
+  const lastSegment = segments[segments.length - 1];
+  const shouldPreserveTrailingSlash = lastSegment === null || lastSegment === void 0 ? void 0 : lastSegment.endsWith("/");
+  for (const segment of segments) {
+    const cleanSegment = trimSlashes(segment);
+    if (cleanSegment) {
+      result = joinPathSegments(result, cleanSegment);
+    }
+  }
+  if (shouldPreserveTrailingSlash && !result.endsWith("/")) {
+    result += "/";
+  }
+  return result;
+}
+function joinPathSegments(left, right) {
+  if (left.endsWith("/")) {
+    return left + right;
+  }
+  return `${left}/${right}`;
+}
+function trimSlashes(str) {
+  if (!str)
+    return str;
+  let start2 = 0;
+  let end = str.length;
+  if (str.startsWith("/"))
+    start2 = 1;
+  if (str.endsWith("/"))
+    end = str.length - 1;
+  return start2 === 0 && end === str.length ? str : str.slice(start2, end);
+}
+
 // node_modules/@getbrevo/brevo/dist/esm/core/fetcher/Supplier.mjs
 var __awaiter10 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
@@ -86235,7 +86333,7 @@ var Supplier = {
   })
 };
 
-// node_modules/@getbrevo/brevo/dist/esm/core/file/file.mjs
+// node_modules/@getbrevo/brevo/dist/esm/core/fetcher/makePassthroughRequest.mjs
 var __awaiter11 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
@@ -86263,8 +86361,138 @@ var __awaiter11 = function(thisArg, _arguments, P, generator) {
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 };
-function toMultipartDataPart(file) {
+function makePassthroughRequest(input, init3, clientOptions, requestOptions) {
   return __awaiter11(this, void 0, void 0, function* () {
+    var _a3, _b2, _c, _d, _e, _f, _g;
+    const logger = createLogger(clientOptions.logging);
+    let url;
+    let effectiveInit = init3;
+    if (input instanceof Request) {
+      url = input.url;
+      if (init3 == null) {
+        effectiveInit = {
+          method: input.method,
+          headers: Object.fromEntries(input.headers.entries()),
+          body: input.body,
+          signal: input.signal,
+          credentials: input.credentials,
+          cache: input.cache,
+          redirect: input.redirect,
+          referrer: input.referrer,
+          integrity: input.integrity,
+          mode: input.mode
+        };
+      }
+    } else {
+      url = input instanceof URL ? input.toString() : input;
+    }
+    const baseUrl = (_a3 = clientOptions.baseUrl != null ? yield Supplier.get(clientOptions.baseUrl) : void 0) !== null && _a3 !== void 0 ? _a3 : clientOptions.environment != null ? yield Supplier.get(clientOptions.environment) : void 0;
+    let fullUrl;
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      fullUrl = url;
+    } else if (baseUrl != null) {
+      fullUrl = join4(baseUrl, url);
+    } else {
+      fullUrl = url;
+    }
+    const mergedHeaders = {};
+    if (clientOptions.headers != null) {
+      for (const [key, value] of Object.entries(clientOptions.headers)) {
+        const resolved = yield EndpointSupplier.get(value, { endpointMetadata: {} });
+        if (resolved != null) {
+          mergedHeaders[key.toLowerCase()] = `${resolved}`;
+        }
+      }
+    }
+    if (clientOptions.getAuthHeaders != null) {
+      const authHeaders = yield clientOptions.getAuthHeaders();
+      for (const [key, value] of Object.entries(authHeaders)) {
+        mergedHeaders[key.toLowerCase()] = value;
+      }
+    }
+    if ((effectiveInit === null || effectiveInit === void 0 ? void 0 : effectiveInit.headers) != null) {
+      const initHeaders = effectiveInit.headers instanceof Headers ? Object.fromEntries(effectiveInit.headers.entries()) : Array.isArray(effectiveInit.headers) ? Object.fromEntries(effectiveInit.headers) : effectiveInit.headers;
+      for (const [key, value] of Object.entries(initHeaders)) {
+        if (value != null) {
+          mergedHeaders[key.toLowerCase()] = value;
+        }
+      }
+    }
+    if ((requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers) != null) {
+      for (const [key, value] of Object.entries(requestOptions.headers)) {
+        mergedHeaders[key.toLowerCase()] = value;
+      }
+    }
+    const method = (_b2 = effectiveInit === null || effectiveInit === void 0 ? void 0 : effectiveInit.method) !== null && _b2 !== void 0 ? _b2 : "GET";
+    const body = effectiveInit === null || effectiveInit === void 0 ? void 0 : effectiveInit.body;
+    const timeoutInSeconds = (_c = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _c !== void 0 ? _c : clientOptions.timeoutInSeconds;
+    const timeoutMs = timeoutInSeconds != null ? timeoutInSeconds * 1e3 : void 0;
+    const maxRetries = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _d !== void 0 ? _d : clientOptions.maxRetries;
+    const abortSignal = (_f = (_e = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal) !== null && _e !== void 0 ? _e : effectiveInit === null || effectiveInit === void 0 ? void 0 : effectiveInit.signal) !== null && _f !== void 0 ? _f : void 0;
+    const fetchFn = (_g = clientOptions.fetch) !== null && _g !== void 0 ? _g : yield getFetchFn();
+    if (logger.isDebug()) {
+      logger.debug("Making passthrough HTTP request", {
+        method,
+        url: fullUrl,
+        hasBody: body != null
+      });
+    }
+    const response = yield requestWithRetries(() => __awaiter11(this, void 0, void 0, function* () {
+      return makeRequest(
+        fetchFn,
+        fullUrl,
+        method,
+        mergedHeaders,
+        body !== null && body !== void 0 ? body : void 0,
+        timeoutMs,
+        abortSignal,
+        (effectiveInit === null || effectiveInit === void 0 ? void 0 : effectiveInit.credentials) === "include",
+        void 0,
+        // duplex
+        false
+      );
+    }), maxRetries);
+    if (logger.isDebug()) {
+      logger.debug("Passthrough HTTP request completed", {
+        method,
+        url: fullUrl,
+        statusCode: response.status
+      });
+    }
+    return response;
+  });
+}
+
+// node_modules/@getbrevo/brevo/dist/esm/core/file/file.mjs
+var __awaiter12 = function(thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function(resolve2) {
+      resolve2(value);
+    });
+  }
+  return new (P || (P = Promise))(function(resolve2, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
+function toMultipartDataPart(file) {
+  return __awaiter12(this, void 0, void 0, function* () {
     const { data, filename, contentType } = yield getFileWithMetadata(file, {
       noSniffFileSize: true
     });
@@ -86276,7 +86504,7 @@ function toMultipartDataPart(file) {
   });
 }
 function getFileWithMetadata(file_1) {
-  return __awaiter11(this, arguments, void 0, function* (file, { noSniffFileSize } = {}) {
+  return __awaiter12(this, arguments, void 0, function* (file, { noSniffFileSize } = {}) {
     var _a3, _b2, _c, _d, _e;
     if (isFileLike(file)) {
       return getFileWithMetadata({
@@ -86285,7 +86513,7 @@ function getFileWithMetadata(file_1) {
     }
     if ("path" in file) {
       const fs = yield import("fs");
-      if (!fs || !fs.createReadStream) {
+      if (!(fs === null || fs === void 0 ? void 0 : fs.createReadStream)) {
         throw new Error("File path uploads are not supported in this environment.");
       }
       const data = fs.createReadStream(file.path);
@@ -86318,10 +86546,11 @@ function isFileLike(value) {
   return isBuffer2(value) || isArrayBufferView(value) || isArrayBuffer(value) || isUint8Array(value) || isBlob(value) || isFile(value) || isStreamLike(value) || isReadableStream(value);
 }
 function tryGetFileSizeFromPath(path) {
-  return __awaiter11(this, void 0, void 0, function* () {
+  return __awaiter12(this, void 0, void 0, function* () {
+    var _a3;
     try {
       const fs = yield import("fs");
-      if (!fs || !fs.promises || !fs.promises.stat) {
+      if (!((_a3 = fs === null || fs === void 0 ? void 0 : fs.promises) === null || _a3 === void 0 ? void 0 : _a3.stat)) {
         return void 0;
       }
       const fileStat = yield fs.promises.stat(path);
@@ -86341,7 +86570,7 @@ function tryGetNameFromFileLike(data) {
   return void 0;
 }
 function tryGetContentLengthFromFileLike(data_1) {
-  return __awaiter11(this, arguments, void 0, function* (data, { noSniffFileSize } = {}) {
+  return __awaiter12(this, arguments, void 0, function* (data, { noSniffFileSize } = {}) {
     if (isBuffer2(data)) {
       return data.length;
     }
@@ -86461,12 +86690,13 @@ function evaluateRuntime() {
       type: "react-native"
     };
   }
-  const isNode = typeof process !== "undefined" && "version" in process && !!process.version && "versions" in process && !!((_e = process.versions) === null || _e === void 0 ? void 0 : _e.node);
+  const _process = typeof process !== "undefined" ? process : void 0;
+  const isNode = typeof _process !== "undefined" && typeof ((_e = _process.versions) === null || _e === void 0 ? void 0 : _e.node) === "string";
   if (isNode) {
     return {
       type: "node",
-      version: process.versions.node,
-      parsedVersion: Number(process.versions.node.split(".")[0])
+      version: _process.versions.node,
+      parsedVersion: Number(_process.versions.node.split(".")[0])
     };
   }
   return {
@@ -86475,7 +86705,7 @@ function evaluateRuntime() {
 }
 
 // node_modules/@getbrevo/brevo/dist/esm/core/form-data-utils/FormDataWrapper.mjs
-var __awaiter12 = function(thisArg, _arguments, P, generator) {
+var __awaiter13 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -86522,7 +86752,7 @@ var __asyncValues = function(o) {
   }
 };
 function newFormData() {
-  return __awaiter12(this, void 0, void 0, function* () {
+  return __awaiter13(this, void 0, void 0, function* () {
     return new FormDataWrapper();
   });
 }
@@ -86531,14 +86761,14 @@ var FormDataWrapper = class {
     this.fd = new FormData();
   }
   setup() {
-    return __awaiter12(this, void 0, void 0, function* () {
+    return __awaiter13(this, void 0, void 0, function* () {
     });
   }
   append(key, value) {
     this.fd.append(key, String(value));
   }
   appendFile(key, value) {
-    return __awaiter12(this, void 0, void 0, function* () {
+    return __awaiter13(this, void 0, void 0, function* () {
       const { data, filename, contentType } = yield toMultipartDataPart(value);
       const blob = yield convertToBlob(data, contentType);
       if (filename) {
@@ -86569,7 +86799,7 @@ function isArrayBufferView2(value) {
   return ArrayBuffer.isView(value);
 }
 function streamToBuffer(stream) {
-  return __awaiter12(this, void 0, void 0, function* () {
+  return __awaiter13(this, void 0, void 0, function* () {
     var _a3, stream_1, stream_1_1;
     var _b2, e_1, _c, _d;
     if (RUNTIME.type === "node") {
@@ -86621,7 +86851,7 @@ function streamToBuffer(stream) {
   });
 }
 function convertToBlob(value, contentType) {
-  return __awaiter12(this, void 0, void 0, function* () {
+  return __awaiter13(this, void 0, void 0, function* () {
     if (isStreamLike2(value) || isReadableStream2(value)) {
       const buffer = yield streamToBuffer(value);
       return new Blob([buffer], { type: contentType });
@@ -86685,74 +86915,8 @@ function encodePathParam(param) {
   return encodeURIComponent(param);
 }
 
-// node_modules/@getbrevo/brevo/dist/esm/core/url/join.mjs
-function join4(base, ...segments) {
-  if (!base) {
-    return "";
-  }
-  if (segments.length === 0) {
-    return base;
-  }
-  if (base.includes("://")) {
-    let url;
-    try {
-      url = new URL(base);
-    } catch (_a3) {
-      return joinPath(base, ...segments);
-    }
-    const lastSegment = segments[segments.length - 1];
-    const shouldPreserveTrailingSlash = lastSegment === null || lastSegment === void 0 ? void 0 : lastSegment.endsWith("/");
-    for (const segment of segments) {
-      const cleanSegment = trimSlashes(segment);
-      if (cleanSegment) {
-        url.pathname = joinPathSegments(url.pathname, cleanSegment);
-      }
-    }
-    if (shouldPreserveTrailingSlash && !url.pathname.endsWith("/")) {
-      url.pathname += "/";
-    }
-    return url.toString();
-  }
-  return joinPath(base, ...segments);
-}
-function joinPath(base, ...segments) {
-  if (segments.length === 0) {
-    return base;
-  }
-  let result = base;
-  const lastSegment = segments[segments.length - 1];
-  const shouldPreserveTrailingSlash = lastSegment === null || lastSegment === void 0 ? void 0 : lastSegment.endsWith("/");
-  for (const segment of segments) {
-    const cleanSegment = trimSlashes(segment);
-    if (cleanSegment) {
-      result = joinPathSegments(result, cleanSegment);
-    }
-  }
-  if (shouldPreserveTrailingSlash && !result.endsWith("/")) {
-    result += "/";
-  }
-  return result;
-}
-function joinPathSegments(left, right) {
-  if (left.endsWith("/")) {
-    return left + right;
-  }
-  return `${left}/${right}`;
-}
-function trimSlashes(str) {
-  if (!str)
-    return str;
-  let start2 = 0;
-  let end = str.length;
-  if (str.startsWith("/"))
-    start2 = 1;
-  if (str.endsWith("/"))
-    end = str.length - 1;
-  return start2 === 0 && end === str.length ? str : str.slice(start2, end);
-}
-
 // node_modules/@getbrevo/brevo/dist/esm/auth/HeaderAuthProvider.mjs
-var __awaiter13 = function(thisArg, _arguments, P, generator) {
+var __awaiter14 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -86789,7 +86953,7 @@ var HeaderAuthProvider = class _HeaderAuthProvider {
     return (options === null || options === void 0 ? void 0 : options[PARAM_KEY]) != null;
   }
   getAuthRequest() {
-    return __awaiter13(this, arguments, void 0, function* ({ endpointMetadata } = {}) {
+    return __awaiter14(this, arguments, void 0, function* ({ endpointMetadata } = {}) {
       const headerValue = yield Supplier.get(this.options[PARAM_KEY]);
       if (headerValue == null) {
         throw new BrevoError({
@@ -86840,8 +87004,8 @@ function normalizeClientOptions(options) {
   const headers = mergeHeaders({
     "X-Fern-Language": "JavaScript",
     "X-Fern-SDK-Name": "@getbrevo/brevo",
-    "X-Fern-SDK-Version": "4.0.1",
-    "User-Agent": "@getbrevo/brevo/4.0.1",
+    "X-Fern-SDK-Version": "5.0.4",
+    "User-Agent": "@getbrevo/brevo/5.0.4",
     "X-Fern-Runtime": RUNTIME.type,
     "X-Fern-Runtime-Version": RUNTIME.version
   }, options === null || options === void 0 ? void 0 : options.headers);
@@ -86878,11 +87042,14 @@ function handleNonStatusCodeError(error3, rawResponse, method, path) {
         rawResponse
       });
     case "timeout":
-      throw new BrevoTimeoutError(`Timeout exceeded when calling ${method} ${path}.`);
+      throw new BrevoTimeoutError(`Timeout exceeded when calling ${method} ${path}.`, {
+        cause: error3.cause
+      });
     case "unknown":
       throw new BrevoError({
         message: error3.errorMessage,
-        rawResponse
+        rawResponse,
+        cause: error3.cause
       });
     default:
       throw new BrevoError({
@@ -86893,7 +87060,7 @@ function handleNonStatusCodeError(error3, rawResponse, method, path) {
 }
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/account/client/Client.mjs
-var __awaiter14 = function(thisArg, _arguments, P, generator) {
+var __awaiter15 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -86962,7 +87129,7 @@ var AccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getAccount(requestOptions));
   }
   __getAccount(requestOptions) {
-    return __awaiter14(this, void 0, void 0, function* () {
+    return __awaiter15(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -87021,7 +87188,7 @@ var AccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getAccountActivity(request2, requestOptions));
   }
   __getAccountActivity() {
-    return __awaiter14(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter15(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { startDate, endDate, email, limit, offset } = request2;
       const _queryParams = {
@@ -87065,7 +87232,7 @@ var AccountClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/balance/client/Client.mjs
-var __awaiter15 = function(thisArg, _arguments, P, generator) {
+var __awaiter16 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -87130,16 +87297,17 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__getActiveBalancesApi(request2, requestOptions));
   }
   __getActiveBalancesApi(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
-      const { pid, limit, offset, sort_field: sortField, sort, contact_id: contactId, balance_definition_id: balanceDefinitionId } = request2;
+      const { pid, limit, offset, sort_field: sortField, sort, contact_id: contactId, balance_definition_id: balanceDefinitionId, includeInternal } = request2;
       const _queryParams = {
         limit,
         offset,
         sort_field: sortField,
         sort,
         contact_id: contactId,
-        balance_definition_id: balanceDefinitionId
+        balance_definition_id: balanceDefinitionId,
+        includeInternal
       };
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -87200,7 +87368,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__getBalanceDefinitionList(request2, requestOptions));
   }
   __getBalanceDefinitionList(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, limit, offset, sortField, sort, version } = request2;
       const _queryParams = {
@@ -87273,7 +87441,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__createBalanceDefinition(request2, requestOptions));
   }
   __createBalanceDefinition(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -87340,7 +87508,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__getBalanceDefinition(request2, requestOptions));
   }
   __getBalanceDefinition(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, bdid, version } = request2;
       const _queryParams = {
@@ -87410,7 +87578,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__updateBalanceDefinition(request2, requestOptions));
   }
   __updateBalanceDefinition(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, bdid } = request2, _body = __rest(request2, ["pid", "bdid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -87479,7 +87647,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteBalanceDefinition(request2, requestOptions));
   }
   __deleteBalanceDefinition(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, bdid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -87548,7 +87716,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__createBalanceLimit(request2, requestOptions));
   }
   __createBalanceLimit(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, bdid } = request2, _body = __rest(request2, ["pid", "bdid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -87616,7 +87784,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__getBalanceLimit(request2, requestOptions));
   }
   __getBalanceLimit(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, bdid, blid, version } = request2;
       const _queryParams = {
@@ -87689,7 +87857,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__updateBalanceLimit(request2, requestOptions));
   }
   __updateBalanceLimit(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, bdid, blid } = request2, _body = __rest(request2, ["pid", "bdid", "blid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -87757,7 +87925,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteBalanceLimit(request2, requestOptions));
   }
   __deleteBalanceLimit(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, bdid, blid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -87820,16 +87988,19 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__getContactBalances(request2, requestOptions));
   }
   __getContactBalances(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
-      const { pid } = request2;
+      const { pid, includeInternal } = request2;
+      const _queryParams = {
+        includeInternal
+      };
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
       const _response = yield fetcher({
         url: url_exports.join((_c = (_b2 = yield Supplier.get(this._options.baseUrl)) !== null && _b2 !== void 0 ? _b2 : yield Supplier.get(this._options.environment)) !== null && _c !== void 0 ? _c : BrevoEnvironment.Default, `loyalty/balance/programs/${url_exports.encodePathParam(pid)}/contact-balances`),
         method: "GET",
         headers: _headers,
-        queryParameters: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams,
+        queryParameters: Object.assign(Object.assign({}, _queryParams), requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams),
         timeoutMs: ((_f = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _d !== void 0 ? _d : (_e = this._options) === null || _e === void 0 ? void 0 : _e.timeoutInSeconds) !== null && _f !== void 0 ? _f : 60) * 1e3,
         maxRetries: (_g = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _g !== void 0 ? _g : (_h = this._options) === null || _h === void 0 ? void 0 : _h.maxRetries,
         abortSignal: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal,
@@ -87887,7 +88058,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__createBalanceOrder(request2, requestOptions));
   }
   __createBalanceOrder(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -87952,16 +88123,19 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__getSubscriptionBalances(request2, requestOptions));
   }
   __getSubscriptionBalances(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
-      const { pid, cid } = request2;
+      const { pid, cid, includeInternal } = request2;
+      const _queryParams = {
+        includeInternal
+      };
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
       const _response = yield fetcher({
         url: url_exports.join((_c = (_b2 = yield Supplier.get(this._options.baseUrl)) !== null && _b2 !== void 0 ? _b2 : yield Supplier.get(this._options.environment)) !== null && _c !== void 0 ? _c : BrevoEnvironment.Default, `loyalty/balance/programs/${url_exports.encodePathParam(pid)}/subscriptions/${url_exports.encodePathParam(cid)}/balances`),
         method: "GET",
         headers: _headers,
-        queryParameters: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams,
+        queryParameters: Object.assign(Object.assign({}, _queryParams), requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams),
         timeoutMs: ((_f = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _d !== void 0 ? _d : (_e = this._options) === null || _e === void 0 ? void 0 : _e.timeoutInSeconds) !== null && _f !== void 0 ? _f : 60) * 1e3,
         maxRetries: (_g = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _g !== void 0 ? _g : (_h = this._options) === null || _h === void 0 ? void 0 : _h.maxRetries,
         abortSignal: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal,
@@ -88020,7 +88194,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__createSubscriptionBalances(request2, requestOptions));
   }
   __createSubscriptionBalances(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, cid } = request2, _body = __rest(request2, ["pid", "cid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88083,25 +88257,27 @@ var BalanceClient = class {
    * @example
    *     await client.balance.getTransactionHistoryApi({
    *         pid: "pid",
-   *         contact_id: 1,
-   *         balance_definition_id: "balance_definition_id"
+   *         contactId: 1,
+   *         balanceDefinitionId: "balanceDefinitionId"
    *     })
    */
   getTransactionHistoryApi(request2, requestOptions) {
     return HttpResponsePromise.fromPromise(this.__getTransactionHistoryApi(request2, requestOptions));
   }
   __getTransactionHistoryApi(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
-      const { pid, limit, offset, sort_field: sortField, sort, contact_id: contactId, balance_definition_id: balanceDefinitionId, filters } = request2;
+      const { pid, limit, offset, sortField, sort, contactId, balanceDefinitionId, filters, status, transactionType } = request2;
       const _queryParams = {
         limit,
         offset,
-        sort_field: sortField != null ? sortField : void 0,
+        sortField: sortField != null ? sortField : void 0,
         sort: sort != null ? sort : void 0,
-        contact_id: contactId,
-        balance_definition_id: balanceDefinitionId,
-        filters
+        contactId,
+        balanceDefinitionId,
+        filters,
+        status: status != null ? status : void 0,
+        transactionType: transactionType != null ? transactionType : void 0
       };
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -88168,7 +88344,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__beginTransaction(request2, requestOptions));
   }
   __beginTransaction(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88235,7 +88411,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__cancelTransaction(request2, requestOptions));
   }
   __cancelTransaction(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, tid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88299,7 +88475,7 @@ var BalanceClient = class {
     return HttpResponsePromise.fromPromise(this.__completeTransaction(request2, requestOptions));
   }
   __completeTransaction(request2, requestOptions) {
-    return __awaiter15(this, void 0, void 0, function* () {
+    return __awaiter16(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, tid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88344,7 +88520,7 @@ var BalanceClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/companies/client/Client.mjs
-var __awaiter16 = function(thisArg, _arguments, P, generator) {
+var __awaiter17 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -88399,7 +88575,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllCompanies(request2, requestOptions));
   }
   __getAllCompanies() {
-    return __awaiter16(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { filters, linkedContactsIds, linkedDealsIds, modifiedSince, createdSince, page, limit, sort, sortBy } = request2;
       const _queryParams = {
@@ -88459,7 +88635,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__createACompany(request2, requestOptions));
   }
   __createACompany(request2, requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -88511,7 +88687,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__importCompaniesCreationAndUpdation(request2, requestOptions));
   }
   __importCompaniesCreationAndUpdation(request2, requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _body = yield newFormData();
       if (request2.file != null) {
@@ -88570,7 +88746,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__linkAndUnlinkCompanyWithContactAndDeal(request2, requestOptions));
   }
   __linkAndUnlinkCompanyWithContactAndDeal(request2, requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest2(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88623,7 +88799,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__getACompany(request2, requestOptions));
   }
   __getACompany(request2, requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88675,7 +88851,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteACompany(request2, requestOptions));
   }
   __deleteACompany(request2, requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88727,7 +88903,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__updateACompany(request2, requestOptions));
   }
   __updateACompany(request2, requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest2(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -88783,7 +88959,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__createACompanyDealAttribute(request2, requestOptions));
   }
   __createACompanyDealAttribute(request2, requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -88820,6 +88996,113 @@ var CompaniesClient = class {
     });
   }
   /**
+   * @param {Brevo.DeleteCrmAttributesIdRequest} request
+   * @param {CompaniesClient.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link Brevo.BadRequestError}
+   * @throws {@link Brevo.NotFoundError}
+   *
+   * @example
+   *     await client.companies.deleteAnAttribute({
+   *         id: "id"
+   *     })
+   */
+  deleteAnAttribute(request2, requestOptions) {
+    return HttpResponsePromise.fromPromise(this.__deleteAnAttribute(request2, requestOptions));
+  }
+  __deleteAnAttribute(request2, requestOptions) {
+    return __awaiter17(this, void 0, void 0, function* () {
+      var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
+      const { id } = request2;
+      const _authRequest = yield this._options.authProvider.getAuthRequest();
+      const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
+      const _response = yield fetcher({
+        url: url_exports.join((_c = (_b2 = yield Supplier.get(this._options.baseUrl)) !== null && _b2 !== void 0 ? _b2 : yield Supplier.get(this._options.environment)) !== null && _c !== void 0 ? _c : BrevoEnvironment.Default, `crm/attributes/${url_exports.encodePathParam(id)}`),
+        method: "DELETE",
+        headers: _headers,
+        queryParameters: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams,
+        timeoutMs: ((_f = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _d !== void 0 ? _d : (_e = this._options) === null || _e === void 0 ? void 0 : _e.timeoutInSeconds) !== null && _f !== void 0 ? _f : 60) * 1e3,
+        maxRetries: (_g = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _g !== void 0 ? _g : (_h = this._options) === null || _h === void 0 ? void 0 : _h.maxRetries,
+        abortSignal: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal,
+        fetchFn: (_j = this._options) === null || _j === void 0 ? void 0 : _j.fetch,
+        logging: this._options.logging
+      });
+      if (_response.ok) {
+        return { data: void 0, rawResponse: _response.rawResponse };
+      }
+      if (_response.error.reason === "status-code") {
+        switch (_response.error.statusCode) {
+          case 400:
+            throw new BadRequestError(_response.error.body, _response.rawResponse);
+          case 404:
+            throw new NotFoundError(_response.error.body, _response.rawResponse);
+          default:
+            throw new BrevoError({
+              statusCode: _response.error.statusCode,
+              body: _response.error.body,
+              rawResponse: _response.rawResponse
+            });
+        }
+      }
+      return handleNonStatusCodeError(_response.error, _response.rawResponse, "DELETE", "/crm/attributes/{id}");
+    });
+  }
+  /**
+   * @param {Brevo.PatchCrmAttributesIdRequest} request
+   * @param {CompaniesClient.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link Brevo.BadRequestError}
+   * @throws {@link Brevo.NotFoundError}
+   *
+   * @example
+   *     await client.companies.updateAnAttribute({
+   *         id: "id"
+   *     })
+   */
+  updateAnAttribute(request2, requestOptions) {
+    return HttpResponsePromise.fromPromise(this.__updateAnAttribute(request2, requestOptions));
+  }
+  __updateAnAttribute(request2, requestOptions) {
+    return __awaiter17(this, void 0, void 0, function* () {
+      var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
+      const { id } = request2, _body = __rest2(request2, ["id"]);
+      const _authRequest = yield this._options.authProvider.getAuthRequest();
+      const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
+      const _response = yield fetcher({
+        url: url_exports.join((_c = (_b2 = yield Supplier.get(this._options.baseUrl)) !== null && _b2 !== void 0 ? _b2 : yield Supplier.get(this._options.environment)) !== null && _c !== void 0 ? _c : BrevoEnvironment.Default, `crm/attributes/${url_exports.encodePathParam(id)}`),
+        method: "PATCH",
+        headers: _headers,
+        contentType: "application/json",
+        queryParameters: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams,
+        requestType: "json",
+        body: _body,
+        timeoutMs: ((_f = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _d !== void 0 ? _d : (_e = this._options) === null || _e === void 0 ? void 0 : _e.timeoutInSeconds) !== null && _f !== void 0 ? _f : 60) * 1e3,
+        maxRetries: (_g = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _g !== void 0 ? _g : (_h = this._options) === null || _h === void 0 ? void 0 : _h.maxRetries,
+        abortSignal: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal,
+        fetchFn: (_j = this._options) === null || _j === void 0 ? void 0 : _j.fetch,
+        logging: this._options.logging
+      });
+      if (_response.ok) {
+        return { data: void 0, rawResponse: _response.rawResponse };
+      }
+      if (_response.error.reason === "status-code") {
+        switch (_response.error.statusCode) {
+          case 400:
+            throw new BadRequestError(_response.error.body, _response.rawResponse);
+          case 404:
+            throw new NotFoundError(_response.error.body, _response.rawResponse);
+          default:
+            throw new BrevoError({
+              statusCode: _response.error.statusCode,
+              body: _response.error.body,
+              rawResponse: _response.rawResponse
+            });
+        }
+      }
+      return handleNonStatusCodeError(_response.error, _response.rawResponse, "PATCH", "/crm/attributes/{id}");
+    });
+  }
+  /**
    * @param {CompaniesClient.RequestOptions} requestOptions - Request-specific configuration.
    *
    * @example
@@ -88829,7 +89112,7 @@ var CompaniesClient = class {
     return HttpResponsePromise.fromPromise(this.__getCompanyAttributes(requestOptions));
   }
   __getCompanyAttributes(requestOptions) {
-    return __awaiter16(this, void 0, void 0, function* () {
+    return __awaiter17(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -88863,7 +89146,7 @@ var CompaniesClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/contacts/client/Client.mjs
-var __awaiter17 = function(thisArg, _arguments, P, generator) {
+var __awaiter18 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -88906,14 +89189,6 @@ var ContactsClient = class {
     this._options = normalizeClientOptionsWithAuth(options);
   }
   /**
-   * <Note title="Follow this format when passing a SMS phone number as an attribute">
-   * Accepted Number Formats
-   *
-   * 91xxxxxxxxxx
-   * +91xxxxxxxxxx
-   * 0091xxxxxxxxxx
-   * </Note>
-   *
    * @param {Brevo.GetContactsRequest} request
    * @param {ContactsClient.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -88927,7 +89202,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getContacts(request2, requestOptions));
   }
   __getContacts() {
-    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, modifiedSince, createdSince, sort, segmentId, listIds, filter } = request2;
       const _queryParams = {
@@ -88974,6 +89249,8 @@ var ContactsClient = class {
     });
   }
   /**
+   * <Note>Follow this format when passing a "SMS" phone number as an attribute.
+   * Accepted Number Formats 91xxxxxxxxxx +91xxxxxxxxxx 0091xxxxxxxxxx</Note>
    * Creates new contacts on Brevo. Contacts can be created by passing either - <br><br> 1. email address of the contact (email_id),  <br> 2. phone number of the contact (to be passed as "SMS" field in "attributes" along with proper country code), For example- {"SMS":"+91xxxxxxxxxx"} or {"SMS":"0091xxxxxxxxxx"} <br> 3. ext_id <br>
    *
    * @param {Brevo.CreateContactRequest} request
@@ -88989,7 +89266,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__createContact(request2, requestOptions));
   }
   __createContact() {
-    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89008,7 +89285,10 @@ var ContactsClient = class {
         logging: this._options.logging
       });
       if (_response.ok) {
-        return { data: _response.body, rawResponse: _response.rawResponse };
+        return {
+          data: _response.body,
+          rawResponse: _response.rawResponse
+        };
       }
       if (_response.error.reason === "status-code") {
         switch (_response.error.statusCode) {
@@ -89037,7 +89317,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAttributes(requestOptions));
   }
   __getAttributes(requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89081,7 +89361,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__createAttribute(request2, requestOptions));
   }
   __createAttribute(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { attributeCategory, attributeName } = request2, _body = __rest3(request2, ["attributeCategory", "attributeName"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -89135,7 +89415,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateAttribute(request2, requestOptions));
   }
   __updateAttribute(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { attributeCategory, attributeName } = request2, _body = __rest3(request2, ["attributeCategory", "attributeName"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -89191,7 +89471,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteAttribute(request2, requestOptions));
   }
   __deleteAttribute(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { attributeCategory, attributeName } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -89245,7 +89525,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteMultiAttributeOptions(request2, requestOptions));
   }
   __deleteMultiAttributeOptions(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { attributeType, multipleChoiceAttribute, multipleChoiceAttributeOption } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -89294,7 +89574,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateBatchContacts(request2, requestOptions));
   }
   __updateBatchContacts() {
-    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89331,9 +89611,7 @@ var ContactsClient = class {
     });
   }
   /**
-   * <Note title="How to use attributes param?">
-   * attributes param in this endpoint is an object containing key-value pairs where values can be either a string, integer, array, or boolean. You can create key-value pairs with these four datatypes. When a value is an array, it should be an array of strings.
-   * </Note>
+   * <Note title="How to use attributes param?">attributes param in this endpoint is an object containing key-value pairs where values can be either a string, integer, array, or boolean. You can create key-value pairs with these four datatypes. When a value is an array, it should be an array of strings.</Note>
    *
    * @param {Brevo.CreateDoiContactRequest} request
    * @param {ContactsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -89352,7 +89630,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__createDoiContact(request2, requestOptions));
   }
   __createDoiContact(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89406,7 +89684,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__requestContactExport(request2, requestOptions));
   }
   __requestContactExport(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89445,17 +89723,11 @@ var ContactsClient = class {
     });
   }
   /**
-   * <Note>
-   * Ongoing changes for this endpoint
-   *
+   * <Note>Ongoing changes for this endpoint
    * We're dropping support for the response attributes totalSubscribers and totalBlacklisted.
-   *
    * These are non breaking changes.
-   *
    * The default value for the attributes will be 0.
-   *
-   * The uniqueSubscribers field is deprecated
-   * </Note>
+   * The uniqueSubscribers field is deprecated</Note>
    *
    * @param {Brevo.GetFoldersRequest} request
    * @param {ContactsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -89469,7 +89741,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getFolders(request2, requestOptions));
   }
   __getFolders() {
-    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort } = request2;
       const _queryParams = {
@@ -89521,7 +89793,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__createFolder(request2, requestOptions));
   }
   __createFolder(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89558,13 +89830,9 @@ var ContactsClient = class {
     });
   }
   /**
-   * <Note>
-   * Ongoing changes for this endpoint.
-   *
+   * <Note>Ongoing changes for this endpoint.
    * We're dropping support for the response attributes totalSubscribers and totalBlacklisted.
-   *
-   * These are non breaking changes. The default value for the attributes will be 0.
-   * </Note>
+   * These are non breaking changes. The default value for the attributes will be 0.</Note>
    *
    * @param {Brevo.GetFolderRequest} request
    * @param {ContactsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -89581,7 +89849,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getFolder(request2, requestOptions));
   }
   __getFolder(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { folderId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -89634,7 +89902,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateFolder(request2, requestOptions));
   }
   __updateFolder(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { folderId, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -89689,7 +89957,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteFolder(request2, requestOptions));
   }
   __deleteFolder(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { folderId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -89726,13 +89994,9 @@ var ContactsClient = class {
     });
   }
   /**
-   * <Note>
-   * Ongoing changes for this endpoint.
-   *
+   * <Note>Ongoing changes for this endpoint.
    * We're dropping support for the response attributes totalSubscribers and totalBlacklisted.
-   *
-   * These are non breaking changes. The default value for the attributes will be 0.
-   * </Note>
+   * These are non breaking changes. The default value for the attributes will be 0.</Note>
    *
    * @param {Brevo.GetFolderListsRequest} request
    * @param {ContactsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -89749,7 +90013,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getFolderLists(request2, requestOptions));
   }
   __getFolderLists(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { folderId, limit, offset, sort } = request2;
       const _queryParams = {
@@ -89805,7 +90069,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__importContacts(request2, requestOptions));
   }
   __importContacts() {
-    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89842,13 +90106,9 @@ var ContactsClient = class {
     });
   }
   /**
-   * <Note>
-   * Ongoing changes for this endpoint.
-   *
+   * <Note>Ongoing changes for this endpoint.
    * We're dropping support for the response attributes totalSubscribers and totalBlacklisted.
-   *
-   * These are non breaking changes. The default value for the attributes will be 0.
-   * </Note>
+   * These are non breaking changes. The default value for the attributes will be 0.</Note>
    *
    * @param {Brevo.GetListsRequest} request
    * @param {ContactsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -89862,7 +90122,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getLists(request2, requestOptions));
   }
   __getLists() {
-    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort } = request2;
       const _queryParams = {
@@ -89917,7 +90177,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__createList(request2, requestOptions));
   }
   __createList(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -89969,7 +90229,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getList(request2, requestOptions));
   }
   __getList(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { listId: listId2, startDate, endDate } = request2;
       const _queryParams = {
@@ -90025,7 +90285,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateList(request2, requestOptions));
   }
   __updateList(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { listId: listId2 } = request2, _body = __rest3(request2, ["listId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -90080,7 +90340,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteList(request2, requestOptions));
   }
   __deleteList(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { listId: listId2 } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -90132,7 +90392,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getContactsFromList(request2, requestOptions));
   }
   __getContactsFromList(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { listId: listId2, modifiedSince, limit, offset, sort } = request2;
       const _queryParams = {
@@ -90209,7 +90469,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__addContactToList(request2, requestOptions));
   }
   __addContactToList(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { listId: listId2, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -90291,7 +90551,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__removeContactFromList(request2, requestOptions));
   }
   __removeContactFromList(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { listId: listId2, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -90343,7 +90603,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSegments(request2, requestOptions));
   }
   __getSegments() {
-    return __awaiter17(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort } = request2;
       const _queryParams = {
@@ -90383,14 +90643,8 @@ var ContactsClient = class {
     });
   }
   /**
-   * <Note title="Follow this format when passing a SMS phone number as an attribute">
-   * Accepted Number Formats
-   *
-   * 91xxxxxxxxxx
-   * +91xxxxxxxxxx
-   * 0091xxxxxxxxxx
-   * </Note>
-   *
+   * <Note>Follow this format when passing a "SMS" phone number as an attribute.
+   * Accepted Number Formats 91xxxxxxxxxx +91xxxxxxxxxx 0091xxxxxxxxxx</Note>
    * There are 2 ways to get a contact <br><br> Option 1- https://api.brevo.com/v3/contacts/{identifier} <br><br> Option 2- https://api.brevo.com/v3/contacts/{identifier}?identifierType={} <br> <br> Option 1 only works if identifierType is email_id (for EMAIL), phone_id (for SMS) or contact_id (for ID of the contact),where you can directly pass the value of EMAIL, SMS and ID of the contact.   <br><br> Option 2 works for all identifierType, use email_id for EMAIL attribute, phone_id for SMS attribute, contact_id for ID of the contact, ext_id for EXT_ID attribute, whatsapp_id for WHATSAPP attribute, landline_number_id for LANDLINE_NUMBER attribute <br><br>Along with the contact details, this endpoint will show the statistics of contact for the recent 90 days by default. To fetch the earlier statistics, please use Get contact campaign stats ``https://developers.brevo.com/reference/contacts-7#getcontactstats`` endpoint with the appropriate date ranges.
    *
    * @param {Brevo.GetContactInfoRequest} request
@@ -90408,7 +90662,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getContactInfo(request2, requestOptions));
   }
   __getContactInfo(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { identifier, identifierType, startDate, endDate } = request2;
       const _queryParams = {
@@ -90450,6 +90704,8 @@ var ContactsClient = class {
     });
   }
   /**
+   * <Note>Follow this format when passing a "SMS" phone number as an attribute.
+   * Accepted Number Formats 91xxxxxxxxxx +91xxxxxxxxxx 0091xxxxxxxxxx <br><br> If a blocklisted contact's email address is updated, it is going to remove that blocklisting from the contact and they will be resubscribed.</Note>
    * There are 2 ways to update a contact <br><br> Option 1- https://api.brevo.com/v3/contacts/{identifier} <br><br> Option 2- https://api.brevo.com/v3/contacts/{identifier}?identifierType={} <br> <br> Option 1 only works if identifierType is email_id (for EMAIL) or contact_id (for ID of the contact),where you can directly pass the value of EMAIL and ID of the contact.   <br><br> Option 2 works for all identifierType, use email_id for EMAIL attribute, contact_id for ID of the contact, ext_id for EXT_ID attribute, phone_id for SMS attribute, whatsapp_id for WHATSAPP attribute, landline_number_id for LANDLINE attribute
    *
    * @param {Brevo.UpdateContactRequest} request
@@ -90468,7 +90724,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateContact(request2, requestOptions));
   }
   __updateContact(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { identifier, identifierType } = request2, _body = __rest3(request2, ["identifier", "identifierType"]);
       const _queryParams = {
@@ -90531,7 +90787,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteContact(request2, requestOptions));
   }
   __deleteContact(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { identifier, identifierType } = request2;
       const _queryParams = {
@@ -90588,7 +90844,7 @@ var ContactsClient = class {
     return HttpResponsePromise.fromPromise(this.__getContactStats(request2, requestOptions));
   }
   __getContactStats(request2, requestOptions) {
-    return __awaiter17(this, void 0, void 0, function* () {
+    return __awaiter18(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { identifier, startDate, endDate } = request2;
       const _queryParams = {
@@ -90631,7 +90887,7 @@ var ContactsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/conversations/client/Client.mjs
-var __awaiter18 = function(thisArg, _arguments, P, generator) {
+var __awaiter19 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -90697,7 +90953,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__setsAgentsStatusToOnlineFor23Minutes(request2, requestOptions));
   }
   __setsAgentsStatusToOnlineFor23Minutes() {
-    return __awaiter18(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter19(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -90767,7 +91023,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendAMessageAsAnAgent(request2, requestOptions));
   }
   __sendAMessageAsAnAgent(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -90819,7 +91075,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAMessage(request2, requestOptions));
   }
   __getAMessage(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -90874,7 +91130,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateAMessageSentByAnAgent(request2, requestOptions));
   }
   __updateAMessageSentByAnAgent(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest4(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -90931,7 +91187,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteAMessageSentByAnAgent(request2, requestOptions));
   }
   __deleteAMessageSentByAnAgent(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -90999,7 +91255,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendAnAutomatedMessageToAVisitor(request2, requestOptions));
   }
   __sendAnAutomatedMessageToAVisitor(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -91051,7 +91307,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAnAutomatedMessage(request2, requestOptions));
   }
   __getAnAutomatedMessage(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -91104,7 +91360,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateAnAutomatedMessage(request2, requestOptions));
   }
   __updateAnAutomatedMessage(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest4(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -91159,7 +91415,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteAnAutomatedMessage(request2, requestOptions));
   }
   __deleteAnAutomatedMessage(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -91213,7 +91469,7 @@ var ConversationsClient = class {
     return HttpResponsePromise.fromPromise(this.__setVisitorGroupAssignment(request2, requestOptions));
   }
   __setVisitorGroupAssignment(request2, requestOptions) {
-    return __awaiter18(this, void 0, void 0, function* () {
+    return __awaiter19(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -91257,7 +91513,7 @@ var ConversationsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/coupons/client/Client.mjs
-var __awaiter19 = function(thisArg, _arguments, P, generator) {
+var __awaiter20 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -91313,7 +91569,7 @@ var CouponsClient = class {
     return HttpResponsePromise.fromPromise(this.__getCouponCollections(request2, requestOptions));
   }
   __getCouponCollections() {
-    return __awaiter19(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter20(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort, sortBy } = request2;
       const _queryParams = {
@@ -91372,7 +91628,7 @@ var CouponsClient = class {
     return HttpResponsePromise.fromPromise(this.__createCouponCollection(request2, requestOptions));
   }
   __createCouponCollection(request2, requestOptions) {
-    return __awaiter19(this, void 0, void 0, function* () {
+    return __awaiter20(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -91427,7 +91683,7 @@ var CouponsClient = class {
     return HttpResponsePromise.fromPromise(this.__getCouponCollection(request2, requestOptions));
   }
   __getCouponCollection(request2, requestOptions) {
-    return __awaiter19(this, void 0, void 0, function* () {
+    return __awaiter20(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -91481,7 +91737,7 @@ var CouponsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateCouponCollection(request2, requestOptions));
   }
   __updateCouponCollection(request2, requestOptions) {
-    return __awaiter19(this, void 0, void 0, function* () {
+    return __awaiter20(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest5(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -91538,7 +91794,7 @@ var CouponsClient = class {
     return HttpResponsePromise.fromPromise(this.__createCoupons(request2, requestOptions));
   }
   __createCoupons(request2, requestOptions) {
-    return __awaiter19(this, void 0, void 0, function* () {
+    return __awaiter20(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -91581,7 +91837,7 @@ var CouponsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/customObjects/client/Client.mjs
-var __awaiter20 = function(thisArg, _arguments, P, generator) {
+var __awaiter21 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -91624,12 +91880,8 @@ var CustomObjectsClient = class {
     this._options = normalizeClientOptionsWithAuth(options);
   }
   /**
-   * <Note title="Enterprise access only">
-   * Custom objects are only available to Enterprise plans.
-   *
-   * This feature is in beta. These are subject to change.
-   * </Note>
-   *
+   * <Note title="Enterprise access only">Custom objects are only available to Enterprise plans.
+   * This feature is in beta. These are subject to change.</Note>
    * This API allows bulk upsert of object records in a single request. Each object record may include
    *   - Attributes
    *   - Identifiers
@@ -91643,8 +91895,8 @@ var CustomObjectsClient = class {
    *   - Max 500 attributes defined per object record upsert request
    *     - This is coherent with schema limitation: an object cannot have more than 500 attributes.
    *     - Worth noting: Nothing happens If an attribute is mentioned in the request, but was not previously defined for the object schema (no error, no attribute creation)
-   *   - Max 10 associations defined per object record upsert request
-   *     - This is coherent with schema limitation: an object cannot have more than 10 associations with other objects. and each object record can be linked to max 10 other records.
+   *   - Max 10 associations defined per associated object type, in each record of the request
+   *     - This is not a schema limitation. You can associate an object record to an unlimited number of other object records by running multiple requests.
    * **Errors:**
    *     - Make sure both object records exist before associating them, else the API will return an error.
    *     - This route does not create objects. The object where the object records are upserted by this API must be created already else the API will return an error "invalid object type".
@@ -91667,7 +91919,7 @@ var CustomObjectsClient = class {
     return HttpResponsePromise.fromPromise(this.__upsertrecords(request2, requestOptions));
   }
   __upsertrecords(request2, requestOptions) {
-    return __awaiter20(this, void 0, void 0, function* () {
+    return __awaiter21(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { object_type: objectType } = request2, _body = __rest6(request2, ["object_type"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -91711,12 +91963,8 @@ var CustomObjectsClient = class {
     });
   }
   /**
-   * <Note title="Enterprise access only">
-   * Custom objects are only available to Enterprise plans.
-   *
-   * This feature is in beta. These are subject to change.
-   * </Note>
-   *
+   * <Note title="Enterprise access only">Custom objects are only available to Enterprise plans.
+   * This feature is in beta. These are subject to change.</Note>
    * This API retrieves a list of object records along with their associated records and provides the total count of records for the specified object. **Note**: Contact as object type is not supported in this endpoint.
    *
    * @param {Brevo.GetrecordsRequest} request
@@ -91738,7 +91986,7 @@ var CustomObjectsClient = class {
     return HttpResponsePromise.fromPromise(this.__getrecords(request2, requestOptions));
   }
   __getrecords(request2, requestOptions) {
-    return __awaiter20(this, void 0, void 0, function* () {
+    return __awaiter21(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { object_type: objectType, limit, page_num: pageNum, sort, association } = request2;
       const _queryParams = {
@@ -91809,7 +92057,7 @@ var CustomObjectsClient = class {
     return HttpResponsePromise.fromPromise(this.__batchDeleteObjectRecords(request2, requestOptions));
   }
   __batchDeleteObjectRecords(request2, requestOptions) {
-    return __awaiter20(this, void 0, void 0, function* () {
+    return __awaiter21(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { object_type: objectType } = request2, _body = __rest6(request2, ["object_type"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -91858,7 +92106,7 @@ var CustomObjectsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/deals/client/Client.mjs
-var __awaiter21 = function(thisArg, _arguments, P, generator) {
+var __awaiter22 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -91910,7 +92158,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__getDealAttributes(requestOptions));
   }
   __getDealAttributes(requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -91954,7 +92202,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllDeals(request2, requestOptions));
   }
   __getAllDeals() {
-    return __awaiter21(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter22(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { "filters[attributes.deal_name]": filtersAttributesDealName, "filters[linkedCompaniesIds]": filtersLinkedCompaniesIds, "filters[linkedContactsIds]": filtersLinkedContactsIds, modifiedSince, createdSince, offset, limit, sort } = request2;
       const _queryParams = {
@@ -92013,7 +92261,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__createADeal(request2, requestOptions));
   }
   __createADeal(request2, requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -92065,7 +92313,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__importDealsCreationAndUpdation(request2, requestOptions));
   }
   __importDealsCreationAndUpdation(request2, requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _body = yield newFormData();
       if (request2.file != null) {
@@ -92124,7 +92372,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__linkAndUnlinkADealWithContactsAndCompanies(request2, requestOptions));
   }
   __linkAndUnlinkADealWithContactsAndCompanies(request2, requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest7(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92177,7 +92425,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__getADeal(request2, requestOptions));
   }
   __getADeal(request2, requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92229,7 +92477,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteADeal(request2, requestOptions));
   }
   __deleteADeal(request2, requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92281,7 +92529,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateADeal(request2, requestOptions));
   }
   __updateADeal(request2, requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest7(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92321,6 +92569,8 @@ var DealsClient = class {
     });
   }
   /**
+   * @deprecated
+   *
    * This endpoint is deprecated. Prefer /crm/pipeline/details/{pipelineID} instead.
    *
    * @param {DealsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -92332,7 +92582,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__getPipelineStages(requestOptions));
   }
   __getPipelineStages(requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -92372,7 +92622,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllPipelines(requestOptions));
   }
   __getAllPipelines(requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -92420,7 +92670,7 @@ var DealsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAPipeline(request2, requestOptions));
   }
   __getAPipeline(request2, requestOptions) {
-    return __awaiter21(this, void 0, void 0, function* () {
+    return __awaiter22(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pipelineID: pipelineId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92457,7 +92707,7 @@ var DealsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/domains/client/Client.mjs
-var __awaiter22 = function(thisArg, _arguments, P, generator) {
+var __awaiter23 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -92516,7 +92766,7 @@ var DomainsClient = class {
     return HttpResponsePromise.fromPromise(this.__getDomains(requestOptions));
   }
   __getDomains(requestOptions) {
-    return __awaiter22(this, void 0, void 0, function* () {
+    return __awaiter23(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -92588,7 +92838,7 @@ var DomainsClient = class {
     return HttpResponsePromise.fromPromise(this.__createDomain(request2, requestOptions));
   }
   __createDomain(request2, requestOptions) {
-    return __awaiter22(this, void 0, void 0, function* () {
+    return __awaiter23(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -92653,7 +92903,7 @@ var DomainsClient = class {
     return HttpResponsePromise.fromPromise(this.__getDomainConfiguration(request2, requestOptions));
   }
   __getDomainConfiguration(request2, requestOptions) {
-    return __awaiter22(this, void 0, void 0, function* () {
+    return __awaiter23(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { domainName } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92715,7 +92965,7 @@ var DomainsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteDomain(request2, requestOptions));
   }
   __deleteDomain(request2, requestOptions) {
-    return __awaiter22(this, void 0, void 0, function* () {
+    return __awaiter23(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { domainName } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92779,7 +93029,7 @@ var DomainsClient = class {
     return HttpResponsePromise.fromPromise(this.__authenticateDomain(request2, requestOptions));
   }
   __authenticateDomain(request2, requestOptions) {
-    return __awaiter22(this, void 0, void 0, function* () {
+    return __awaiter23(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { domainName } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -92818,7 +93068,7 @@ var DomainsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/ecommerce/client/Client.mjs
-var __awaiter23 = function(thisArg, _arguments, P, generator) {
+var __awaiter24 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -92873,7 +93123,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getCategories(request2, requestOptions));
   }
   __getCategories() {
-    return __awaiter23(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter24(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort, ids, name, modifiedSince, createdSince, isDeleted } = request2;
       const _queryParams = {
@@ -92932,7 +93182,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__createUpdateCategory(request2, requestOptions));
   }
   __createUpdateCategory(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -92951,7 +93201,10 @@ var EcommerceClient = class {
         logging: this._options.logging
       });
       if (_response.ok) {
-        return { data: _response.body, rawResponse: _response.rawResponse };
+        return {
+          data: _response.body,
+          rawResponse: _response.rawResponse
+        };
       }
       if (_response.error.reason === "status-code") {
         switch (_response.error.statusCode) {
@@ -92985,7 +93238,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__createUpdateBatchCategory(request2, requestOptions));
   }
   __createUpdateBatchCategory(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93040,7 +93293,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getCategoryInfo(request2, requestOptions));
   }
   __getCategoryInfo(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -93091,7 +93344,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__activateTheECommerceApp(requestOptions));
   }
   __activateTheECommerceApp(requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93142,7 +93395,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getAttributionMetricsForOneOrMoreBrevoCampaignsOrWorkflows(request2, requestOptions));
   }
   __getAttributionMetricsForOneOrMoreBrevoCampaignsOrWorkflows() {
-    return __awaiter23(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter24(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { periodFrom, periodTo, "emailCampaignId[]": emailCampaignIdArray, "smsCampaignId[]": smsCampaignIdArray, "automationWorkflowEmailId[]": automationWorkflowEmailIdArray, "automationWorkflowSmsId[]": automationWorkflowSmsIdArray } = request2;
       const _queryParams = {
@@ -93203,7 +93456,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getDetailedAttributionMetricsForASingleBrevoCampaignOrWorkflow(request2, requestOptions));
   }
   __getDetailedAttributionMetricsForASingleBrevoCampaignOrWorkflow(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { conversionSource, conversionSourceId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -93256,7 +93509,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getAttributedProductSalesForASingleBrevoCampaignOrWorkflow(request2, requestOptions));
   }
   __getAttributedProductSalesForASingleBrevoCampaignOrWorkflow(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { conversionSource, conversionSourceId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -93307,7 +93560,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getTheIso4217CompliantDisplayCurrencyCodeForYourBrevoAccount(requestOptions));
   }
   __getTheIso4217CompliantDisplayCurrencyCodeForYourBrevoAccount(requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93365,7 +93618,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__setConfigDisplayCurrency(request2, requestOptions));
   }
   __setConfigDisplayCurrency(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93425,7 +93678,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getOrders(request2, requestOptions));
   }
   __getOrders() {
-    return __awaiter23(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter24(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort, modifiedSince, createdSince } = request2;
       const _queryParams = {
@@ -93481,8 +93734,7 @@ var EcommerceClient = class {
    *         id: "14",
    *         products: [{
    *                 price: 99.99,
-   *                 productId: "P1",
-   *                 quantity: 10
+   *                 productId: "P1"
    *             }],
    *         status: "completed",
    *         updatedAt: "2021-07-30T10:59:23.383Z"
@@ -93492,7 +93744,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__createOrder(request2, requestOptions));
   }
   __createOrder(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93544,8 +93796,7 @@ var EcommerceClient = class {
    *                 id: "14",
    *                 products: [{
    *                         price: 99.99,
-   *                         productId: "P1",
-   *                         quantity: 10
+   *                         productId: "P1"
    *                     }],
    *                 status: "completed",
    *                 updatedAt: "2021-07-30T10:59:23.383Z"
@@ -93556,7 +93807,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__createBatchOrder(request2, requestOptions));
   }
   __createBatchOrder(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93605,7 +93856,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getProducts(request2, requestOptions));
   }
   __getProducts() {
-    return __awaiter23(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter24(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort, ids, name, "price[lte]": priceLte, "price[gte]": priceGte, "price[lt]": priceLt, "price[gt]": priceGt, "price[eq]": priceEq, "price[ne]": priceNe, categories, modifiedSince, createdSince, isDeleted } = request2;
       const _queryParams = {
@@ -93672,7 +93923,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__createUpdateProduct(request2, requestOptions));
   }
   __createUpdateProduct(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93691,7 +93942,10 @@ var EcommerceClient = class {
         logging: this._options.logging
       });
       if (_response.ok) {
-        return { data: _response.body, rawResponse: _response.rawResponse };
+        return {
+          data: _response.body,
+          rawResponse: _response.rawResponse
+        };
       }
       if (_response.error.reason === "status-code") {
         switch (_response.error.statusCode) {
@@ -93726,7 +93980,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__createUpdateBatchProducts(request2, requestOptions));
   }
   __createUpdateBatchProducts(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -93781,7 +94035,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__getProductInfo(request2, requestOptions));
   }
   __getProductInfo(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -93836,7 +94090,7 @@ var EcommerceClient = class {
     return HttpResponsePromise.fromPromise(this.__createProductAlert(request2, requestOptions));
   }
   __createProductAlert(request2, requestOptions) {
-    return __awaiter23(this, void 0, void 0, function* () {
+    return __awaiter24(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id, type: type_ } = request2, _body = __rest8(request2, ["id", "type"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -93882,7 +94136,7 @@ var EcommerceClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/emailCampaigns/client/Client.mjs
-var __awaiter24 = function(thisArg, _arguments, P, generator) {
+var __awaiter25 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -93925,11 +94179,8 @@ var EmailCampaignsClient = class {
     this._options = normalizeClientOptionsWithAuth(options);
   }
   /**
-   * <Note>
-   * The response payload for this endpoint has changed
-   *
-   * You now need to specify which type of statistics you would like to retrieve. For more information visit [this page](https://developers.brevo.com/changelog/get-all-marketing-campaigns).
-   * </Note>
+   * <Note>The response payload for this endpoint has changed
+   * You now need to specify which type of statistics you would like to retrieve. For more information visit [this page](https://developers.brevo.com/changelog/get-all-marketing-campaigns).</Note>
    *
    * @param {Brevo.GetEmailCampaignsRequest} request
    * @param {EmailCampaignsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -93943,7 +94194,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getEmailCampaigns(request2, requestOptions));
   }
   __getEmailCampaigns() {
-    return __awaiter24(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter25(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { type: type_, status, statistics, startDate, endDate, limit, offset, sort, excludeHtmlContent } = request2;
       const _queryParams = {
@@ -94004,7 +94255,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__createEmailCampaign(request2, requestOptions));
   }
   __createEmailCampaign(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -94055,7 +94306,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__uploadImageToGallery(request2, requestOptions));
   }
   __uploadImageToGallery(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -94107,11 +94358,12 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getEmailCampaign(request2, requestOptions));
   }
   __getEmailCampaign(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
-      const { campaignId, statistics } = request2;
+      const { campaignId, statistics, excludeHtmlContent } = request2;
       const _queryParams = {
-        statistics: statistics != null ? statistics : void 0
+        statistics: statistics != null ? statistics : void 0,
+        excludeHtmlContent
       };
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -94162,7 +94414,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateEmailCampaign(request2, requestOptions));
   }
   __updateEmailCampaign(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2, _body = __rest9(request2, ["campaignId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94217,7 +94469,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteEmailCampaign(request2, requestOptions));
   }
   __deleteEmailCampaign(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94271,7 +94523,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAbTestCampaignResult(request2, requestOptions));
   }
   __getAbTestCampaignResult(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94327,7 +94579,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__emailExportRecipients(request2, requestOptions));
   }
   __emailExportRecipients(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2, _body = __rest9(request2, ["campaignId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94383,7 +94635,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendEmailCampaignNow(request2, requestOptions));
   }
   __sendEmailCampaignNow(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94445,7 +94697,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendReport(request2, requestOptions));
   }
   __sendReport(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94501,7 +94753,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendTestEmail(request2, requestOptions));
   }
   __sendTestEmail(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94559,7 +94811,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSharedTemplateUrl(request2, requestOptions));
   }
   __getSharedTemplateUrl(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94614,7 +94866,7 @@ var EmailCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateCampaignStatus(request2, requestOptions));
   }
   __updateCampaignStatus(request2, requestOptions) {
-    return __awaiter24(this, void 0, void 0, function* () {
+    return __awaiter25(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -94656,7 +94908,7 @@ var EmailCampaignsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/event/client/Client.mjs
-var __awaiter25 = function(thisArg, _arguments, P, generator) {
+var __awaiter26 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -94688,6 +94940,74 @@ var EventClient = class {
     this._options = normalizeClientOptionsWithAuth(options);
   }
   /**
+   * <Note>
+   * This endpoint currently only supports custom events.
+   * </Note>
+   *
+   * Retrieve a list of events filtered by various criteria.
+   *
+   * @param {Brevo.GetEventsRequest} request
+   * @param {EventClient.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link Brevo.BadRequestError}
+   * @throws {@link Brevo.UnauthorizedError}
+   * @throws {@link Brevo.InternalServerError}
+   *
+   * @example
+   *     await client.event.getEvents()
+   */
+  getEvents(request2 = {}, requestOptions) {
+    return HttpResponsePromise.fromPromise(this.__getEvents(request2, requestOptions));
+  }
+  __getEvents() {
+    return __awaiter26(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+      var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
+      const { contact_id: contactId, event_name: eventName, object_type: objectType, startDate, endDate, limit, offset } = request2;
+      const _queryParams = {
+        contact_id: contactId,
+        event_name: eventName,
+        object_type: objectType,
+        startDate,
+        endDate,
+        limit,
+        offset
+      };
+      const _authRequest = yield this._options.authProvider.getAuthRequest();
+      const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
+      const _response = yield fetcher({
+        url: url_exports.join((_c = (_b2 = yield Supplier.get(this._options.baseUrl)) !== null && _b2 !== void 0 ? _b2 : yield Supplier.get(this._options.environment)) !== null && _c !== void 0 ? _c : BrevoEnvironment.Default, "events"),
+        method: "GET",
+        headers: _headers,
+        queryParameters: Object.assign(Object.assign({}, _queryParams), requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams),
+        timeoutMs: ((_f = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _d !== void 0 ? _d : (_e = this._options) === null || _e === void 0 ? void 0 : _e.timeoutInSeconds) !== null && _f !== void 0 ? _f : 60) * 1e3,
+        maxRetries: (_g = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _g !== void 0 ? _g : (_h = this._options) === null || _h === void 0 ? void 0 : _h.maxRetries,
+        abortSignal: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal,
+        fetchFn: (_j = this._options) === null || _j === void 0 ? void 0 : _j.fetch,
+        logging: this._options.logging
+      });
+      if (_response.ok) {
+        return { data: _response.body, rawResponse: _response.rawResponse };
+      }
+      if (_response.error.reason === "status-code") {
+        switch (_response.error.statusCode) {
+          case 400:
+            throw new BadRequestError(_response.error.body, _response.rawResponse);
+          case 401:
+            throw new UnauthorizedError(_response.error.body, _response.rawResponse);
+          case 500:
+            throw new InternalServerError(_response.error.body, _response.rawResponse);
+          default:
+            throw new BrevoError({
+              statusCode: _response.error.statusCode,
+              body: _response.error.body,
+              rawResponse: _response.rawResponse
+            });
+        }
+      }
+      return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/events");
+    });
+  }
+  /**
    * Create an event to track a contact's interaction.
    *
    * @param {Brevo.CreateEventRequest} request
@@ -94706,7 +95026,7 @@ var EventClient = class {
     return HttpResponsePromise.fromPromise(this.__createEvent(request2, requestOptions));
   }
   __createEvent(request2, requestOptions) {
-    return __awaiter25(this, void 0, void 0, function* () {
+    return __awaiter26(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -94744,10 +95064,67 @@ var EventClient = class {
       return handleNonStatusCodeError(_response.error, _response.rawResponse, "POST", "/events");
     });
   }
+  /**
+   * Create multiple events to track contacts' interactions in a single request.
+   *
+   * @param {Brevo.CreateBatchEventsRequestItem[]} request
+   * @param {EventClient.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link Brevo.BadRequestError}
+   * @throws {@link Brevo.UnauthorizedError}
+   *
+   * @example
+   *     await client.event.createBatchEvents([{
+   *             event_name: "order_created",
+   *             identifiers: {}
+   *         }])
+   */
+  createBatchEvents(request2, requestOptions) {
+    return HttpResponsePromise.fromPromise(this.__createBatchEvents(request2, requestOptions));
+  }
+  __createBatchEvents(request2, requestOptions) {
+    return __awaiter26(this, void 0, void 0, function* () {
+      var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
+      const _authRequest = yield this._options.authProvider.getAuthRequest();
+      const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
+      const _response = yield fetcher({
+        url: url_exports.join((_c = (_b2 = yield Supplier.get(this._options.baseUrl)) !== null && _b2 !== void 0 ? _b2 : yield Supplier.get(this._options.environment)) !== null && _c !== void 0 ? _c : BrevoEnvironment.Default, "events/batch"),
+        method: "POST",
+        headers: _headers,
+        contentType: "application/json",
+        queryParameters: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams,
+        requestType: "json",
+        body: request2,
+        timeoutMs: ((_f = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _d !== void 0 ? _d : (_e = this._options) === null || _e === void 0 ? void 0 : _e.timeoutInSeconds) !== null && _f !== void 0 ? _f : 60) * 1e3,
+        maxRetries: (_g = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _g !== void 0 ? _g : (_h = this._options) === null || _h === void 0 ? void 0 : _h.maxRetries,
+        abortSignal: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal,
+        fetchFn: (_j = this._options) === null || _j === void 0 ? void 0 : _j.fetch,
+        logging: this._options.logging
+      });
+      if (_response.ok) {
+        return { data: _response.body, rawResponse: _response.rawResponse };
+      }
+      if (_response.error.reason === "status-code") {
+        switch (_response.error.statusCode) {
+          case 400:
+            throw new BadRequestError(_response.error.body, _response.rawResponse);
+          case 401:
+            throw new UnauthorizedError(_response.error.body, _response.rawResponse);
+          default:
+            throw new BrevoError({
+              statusCode: _response.error.statusCode,
+              body: _response.error.body,
+              rawResponse: _response.rawResponse
+            });
+        }
+      }
+      return handleNonStatusCodeError(_response.error, _response.rawResponse, "POST", "/events/batch");
+    });
+  }
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/externalFeeds/client/Client.mjs
-var __awaiter26 = function(thisArg, _arguments, P, generator) {
+var __awaiter27 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -94833,7 +95210,7 @@ var ExternalFeedsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllExternalFeeds(request2, requestOptions));
   }
   __getAllExternalFeeds() {
-    return __awaiter26(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter27(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { search, startDate, endDate, sort, authType, limit, offset } = request2;
       const _queryParams = {
@@ -94937,7 +95314,7 @@ var ExternalFeedsClient = class {
     return HttpResponsePromise.fromPromise(this.__createExternalFeed(request2, requestOptions));
   }
   __createExternalFeed(request2, requestOptions) {
-    return __awaiter26(this, void 0, void 0, function* () {
+    return __awaiter27(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -95012,7 +95389,7 @@ var ExternalFeedsClient = class {
     return HttpResponsePromise.fromPromise(this.__getExternalFeedByUuid(request2, requestOptions));
   }
   __getExternalFeedByUuid(request2, requestOptions) {
-    return __awaiter26(this, void 0, void 0, function* () {
+    return __awaiter27(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { uuid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95129,7 +95506,7 @@ var ExternalFeedsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateExternalFeed(request2, requestOptions));
   }
   __updateExternalFeed(request2, requestOptions) {
-    return __awaiter26(this, void 0, void 0, function* () {
+    return __awaiter27(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { uuid } = request2, _body = __rest10(request2, ["uuid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95202,7 +95579,7 @@ var ExternalFeedsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteExternalFeed(request2, requestOptions));
   }
   __deleteExternalFeed(request2, requestOptions) {
-    return __awaiter26(this, void 0, void 0, function* () {
+    return __awaiter27(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { uuid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95241,7 +95618,7 @@ var ExternalFeedsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/files/client/Client.mjs
-var __awaiter27 = function(thisArg, _arguments, P, generator) {
+var __awaiter28 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -95285,7 +95662,7 @@ var FilesClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllFiles(request2, requestOptions));
   }
   __getAllFiles() {
-    return __awaiter27(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter28(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { entity, entityIds, dateFrom, dateTo, offset, limit, sort } = request2;
       const _queryParams = {
@@ -95344,7 +95721,7 @@ var FilesClient = class {
     return HttpResponsePromise.fromPromise(this.__uploadAFile(request2, requestOptions));
   }
   __uploadAFile(request2, requestOptions) {
-    return __awaiter27(this, void 0, void 0, function* () {
+    return __awaiter28(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j, _k;
       const _body = yield newFormData();
       if (request2.companyId != null) {
@@ -95408,7 +95785,7 @@ var FilesClient = class {
     return HttpResponsePromise.fromPromise(this.__downloadAFile(request2, requestOptions));
   }
   __downloadAFile(request2, requestOptions) {
-    return __awaiter27(this, void 0, void 0, function* () {
+    return __awaiter28(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95460,7 +95837,7 @@ var FilesClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteAFile(request2, requestOptions));
   }
   __deleteAFile(request2, requestOptions) {
-    return __awaiter27(this, void 0, void 0, function* () {
+    return __awaiter28(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95512,7 +95889,7 @@ var FilesClient = class {
     return HttpResponsePromise.fromPromise(this.__getFileDetails(request2, requestOptions));
   }
   __getFileDetails(request2, requestOptions) {
-    return __awaiter27(this, void 0, void 0, function* () {
+    return __awaiter28(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95551,7 +95928,7 @@ var FilesClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/inboundParsing/client/Client.mjs
-var __awaiter28 = function(thisArg, _arguments, P, generator) {
+var __awaiter29 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -95597,7 +95974,7 @@ var InboundParsingClient = class {
     return HttpResponsePromise.fromPromise(this.__getInboundEmailEvents(request2, requestOptions));
   }
   __getInboundEmailEvents() {
-    return __awaiter28(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter29(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { sender, startDate, endDate, limit, offset, sort } = request2;
       const _queryParams = {
@@ -95656,7 +96033,7 @@ var InboundParsingClient = class {
     return HttpResponsePromise.fromPromise(this.__getInboundEmailEventsByUuid(request2, requestOptions));
   }
   __getInboundEmailEventsByUuid(request2, requestOptions) {
-    return __awaiter28(this, void 0, void 0, function* () {
+    return __awaiter29(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { uuid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95695,6 +96072,7 @@ var InboundParsingClient = class {
   }
   /**
    * This endpoint will retrieve inbound attachment with download token.
+   *
    * @throws {@link Brevo.BadRequestError}
    * @throws {@link Brevo.NotFoundError}
    */
@@ -95702,7 +96080,7 @@ var InboundParsingClient = class {
     return HttpResponsePromise.fromPromise(this.__getInboundEmailAttachment(request2, requestOptions));
   }
   __getInboundEmailAttachment(request2, requestOptions) {
-    return __awaiter28(this, void 0, void 0, function* () {
+    return __awaiter29(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { downloadToken } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95742,7 +96120,7 @@ var InboundParsingClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/masterAccount/client/Client.mjs
-var __awaiter29 = function(thisArg, _arguments, P, generator) {
+var __awaiter30 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -95801,7 +96179,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__createANewGroupOfSubAccounts(request2, requestOptions));
   }
   __createANewGroupOfSubAccounts(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -95855,7 +96233,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteSubAccountFromGroup(request2, requestOptions));
   }
   __deleteSubAccountFromGroup(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { groupId } = request2, _body = __rest11(request2, ["groupId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95908,7 +96286,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getAGroupDetails(request2, requestOptions));
   }
   __getAGroupDetails(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -95954,7 +96332,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__updateAGroupOfSubAccounts(request2, requestOptions));
   }
   __updateAGroupOfSubAccounts(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest11(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -96011,7 +96389,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteAGroup(request2, requestOptions));
   }
   __deleteAGroup(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -96057,7 +96435,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getSubAccountGroups(requestOptions));
   }
   __getSubAccountGroups(requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96103,7 +96481,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getCorporateInvitedUsersList(request2, requestOptions));
   }
   __getCorporateInvitedUsersList() {
-    return __awaiter29(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter30(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { type: type_, offset, limit } = request2;
       const _queryParams = {
@@ -96153,7 +96531,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__listOfAllIPs(requestOptions));
   }
   __listOfAllIPs(requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96195,7 +96573,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getTheDetailsOfRequestedMasterAccount(requestOptions));
   }
   __getTheDetailsOfRequestedMasterAccount(requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96252,7 +96630,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__generateSsoTokenToAccessAdminAccount(request2, requestOptions));
   }
   __generateSsoTokenToAccessAdminAccount(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96309,7 +96687,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getTheListOfAllTheSubAccountsOfTheMasterAccount(request2, requestOptions));
   }
   __getTheListOfAllTheSubAccountsOfTheMasterAccount(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { offset, limit } = request2;
       const _queryParams = {
@@ -96368,7 +96746,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__createANewSubAccountUnderAMasterAccount(request2, requestOptions));
   }
   __createANewSubAccountUnderAMasterAccount(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96425,7 +96803,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__associateAnIpToSubAccounts(request2, requestOptions));
   }
   __associateAnIpToSubAccounts(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96479,7 +96857,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__dissociateAnIpToSubAccounts(request2, requestOptions));
   }
   __dissociateAnIpToSubAccounts(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96533,7 +96911,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__createAnApiKeyForASubAccount(request2, requestOptions));
   }
   __createAnApiKeyForASubAccount(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96593,7 +96971,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__generateSsoTokenToAccessSubAccount(request2, requestOptions));
   }
   __generateSsoTokenToAccessSubAccount(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96648,7 +97026,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getSubAccountDetails(request2, requestOptions));
   }
   __getSubAccountDetails(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -96701,7 +97079,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteASubAccount(request2, requestOptions));
   }
   __deleteASubAccount(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -96761,7 +97139,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__enableDisableSubAccountApplicationS(request2, requestOptions));
   }
   __enableDisableSubAccountApplicationS(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest11(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -96834,7 +97212,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__updateSubAccountPlan(request2, requestOptions));
   }
   __updateSubAccountPlan(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest11(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -96906,7 +97284,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__updateSubAccountsPlan(request2, requestOptions));
   }
   __updateSubAccountsPlan() {
-    return __awaiter29(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter30(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -96988,7 +97366,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__inviteAdminUser(request2, requestOptions));
   }
   __inviteAdminUser(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -97044,7 +97422,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__resendCancelAdminUserInvitation(request2, requestOptions));
   }
   __resendCancelAdminUserInvitation(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { action, email } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97099,7 +97477,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__revokeAnAdminUser(request2, requestOptions));
   }
   __revokeAnAdminUser(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { email } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97150,7 +97528,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__getCorporateUserPermission(request2, requestOptions));
   }
   __getCorporateUserPermission(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { email } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97234,7 +97612,7 @@ var MasterAccountClient = class {
     return HttpResponsePromise.fromPromise(this.__changeAdminUserPermissions(request2, requestOptions));
   }
   __changeAdminUserPermissions(request2, requestOptions) {
-    return __awaiter29(this, void 0, void 0, function* () {
+    return __awaiter30(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { email } = request2, _body = __rest11(request2, ["email"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97274,7 +97652,7 @@ var MasterAccountClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/notes/client/Client.mjs
-var __awaiter30 = function(thisArg, _arguments, P, generator) {
+var __awaiter31 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -97318,7 +97696,7 @@ var NotesClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllNotes(request2, requestOptions));
   }
   __getAllNotes() {
-    return __awaiter30(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter31(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { entity, entityIds, dateFrom, dateTo, offset, limit, sort } = request2;
       const _queryParams = {
@@ -97377,7 +97755,7 @@ var NotesClient = class {
     return HttpResponsePromise.fromPromise(this.__createANote(request2, requestOptions));
   }
   __createANote(request2, requestOptions) {
-    return __awaiter30(this, void 0, void 0, function* () {
+    return __awaiter31(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -97431,7 +97809,7 @@ var NotesClient = class {
     return HttpResponsePromise.fromPromise(this.__getANote(request2, requestOptions));
   }
   __getANote(request2, requestOptions) {
-    return __awaiter30(this, void 0, void 0, function* () {
+    return __awaiter31(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97483,7 +97861,7 @@ var NotesClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteANote(request2, requestOptions));
   }
   __deleteANote(request2, requestOptions) {
-    return __awaiter30(this, void 0, void 0, function* () {
+    return __awaiter31(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97539,7 +97917,7 @@ var NotesClient = class {
     return HttpResponsePromise.fromPromise(this.__updateANote(request2, requestOptions));
   }
   __updateANote(request2, requestOptions) {
-    return __awaiter30(this, void 0, void 0, function* () {
+    return __awaiter31(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97583,7 +97961,7 @@ var NotesClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/payments/client/Client.mjs
-var __awaiter31 = function(thisArg, _arguments, P, generator) {
+var __awaiter32 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -97636,7 +98014,7 @@ var PaymentsClient = class {
     return HttpResponsePromise.fromPromise(this.__createPaymentRequest(request2, requestOptions));
   }
   __createPaymentRequest(request2, requestOptions) {
-    return __awaiter31(this, void 0, void 0, function* () {
+    return __awaiter32(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -97694,7 +98072,7 @@ var PaymentsClient = class {
     return HttpResponsePromise.fromPromise(this.__getPaymentRequest(request2, requestOptions));
   }
   __getPaymentRequest(request2, requestOptions) {
-    return __awaiter31(this, void 0, void 0, function* () {
+    return __awaiter32(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97751,7 +98129,7 @@ var PaymentsClient = class {
     return HttpResponsePromise.fromPromise(this.__deletePaymentRequest(request2, requestOptions));
   }
   __deletePaymentRequest(request2, requestOptions) {
-    return __awaiter31(this, void 0, void 0, function* () {
+    return __awaiter32(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97792,7 +98170,7 @@ var PaymentsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/process/client/Client.mjs
-var __awaiter32 = function(thisArg, _arguments, P, generator) {
+var __awaiter33 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -97861,7 +98239,7 @@ var ProcessClient = class {
     return HttpResponsePromise.fromPromise(this.__getProcesses(request2, requestOptions));
   }
   __getProcesses() {
-    return __awaiter32(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter33(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort } = request2;
       const _queryParams = {
@@ -97940,7 +98318,7 @@ var ProcessClient = class {
     return HttpResponsePromise.fromPromise(this.__getProcess(request2, requestOptions));
   }
   __getProcess(request2, requestOptions) {
-    return __awaiter32(this, void 0, void 0, function* () {
+    return __awaiter33(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { processId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -97979,7 +98357,7 @@ var ProcessClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/program/client/Client.mjs
-var __awaiter33 = function(thisArg, _arguments, P, generator) {
+var __awaiter34 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -98041,7 +98419,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__getLpList(request2, requestOptions));
   }
   __getLpList() {
-    return __awaiter33(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter34(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort_field: sortField, sort } = request2;
       const _queryParams = {
@@ -98112,7 +98490,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__createNewLp(request2, requestOptions));
   }
   __createNewLp(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -98177,7 +98555,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__getLoyaltyProgramInfo(request2, requestOptions));
   }
   __getLoyaltyProgramInfo(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98242,7 +98620,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__updateLoyaltyProgram(request2, requestOptions));
   }
   __updateLoyaltyProgram(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest12(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98310,7 +98688,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteLoyaltyProgram(request2, requestOptions));
   }
   __deleteLoyaltyProgram(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98374,7 +98752,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__partiallyUpdateLoyaltyProgram(request2, requestOptions));
   }
   __partiallyUpdateLoyaltyProgram(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest12(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98442,13 +98820,14 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__getParameterSubscriptionInfo(request2, requestOptions));
   }
   __getParameterSubscriptionInfo(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
-      const { pid, contactId, params, loyaltySubscriptionId } = request2;
+      const { pid, contactId, params, loyaltySubscriptionId, includeInternal } = request2;
       const _queryParams = {
         contactId,
         params,
-        loyaltySubscriptionId
+        loyaltySubscriptionId,
+        includeInternal
       };
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -98493,6 +98872,73 @@ var ProgramClient = class {
     });
   }
   /**
+   * Delete subscription for a contact
+   *
+   * @param {Brevo.DeleteContactSubscriptionRequest} request
+   * @param {ProgramClient.RequestOptions} requestOptions - Request-specific configuration.
+   *
+   * @throws {@link Brevo.BadRequestError}
+   * @throws {@link Brevo.UnauthorizedError}
+   * @throws {@link Brevo.ForbiddenError}
+   * @throws {@link Brevo.NotFoundError}
+   * @throws {@link Brevo.UnprocessableEntityError}
+   * @throws {@link Brevo.InternalServerError}
+   *
+   * @example
+   *     await client.program.deleteContactSubscription({
+   *         pid: "pid",
+   *         cid: 1
+   *     })
+   */
+  deleteContactSubscription(request2, requestOptions) {
+    return HttpResponsePromise.fromPromise(this.__deleteContactSubscription(request2, requestOptions));
+  }
+  __deleteContactSubscription(request2, requestOptions) {
+    return __awaiter34(this, void 0, void 0, function* () {
+      var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
+      const { pid, cid } = request2;
+      const _authRequest = yield this._options.authProvider.getAuthRequest();
+      const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
+      const _response = yield fetcher({
+        url: url_exports.join((_c = (_b2 = yield Supplier.get(this._options.baseUrl)) !== null && _b2 !== void 0 ? _b2 : yield Supplier.get(this._options.environment)) !== null && _c !== void 0 ? _c : BrevoEnvironment.Default, `loyalty/config/programs/${url_exports.encodePathParam(pid)}/contact/${url_exports.encodePathParam(cid)}`),
+        method: "DELETE",
+        headers: _headers,
+        queryParameters: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.queryParams,
+        timeoutMs: ((_f = (_d = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.timeoutInSeconds) !== null && _d !== void 0 ? _d : (_e = this._options) === null || _e === void 0 ? void 0 : _e.timeoutInSeconds) !== null && _f !== void 0 ? _f : 60) * 1e3,
+        maxRetries: (_g = requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.maxRetries) !== null && _g !== void 0 ? _g : (_h = this._options) === null || _h === void 0 ? void 0 : _h.maxRetries,
+        abortSignal: requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.abortSignal,
+        fetchFn: (_j = this._options) === null || _j === void 0 ? void 0 : _j.fetch,
+        logging: this._options.logging
+      });
+      if (_response.ok) {
+        return { data: void 0, rawResponse: _response.rawResponse };
+      }
+      if (_response.error.reason === "status-code") {
+        switch (_response.error.statusCode) {
+          case 400:
+            throw new BadRequestError(_response.error.body, _response.rawResponse);
+          case 401:
+            throw new UnauthorizedError(_response.error.body, _response.rawResponse);
+          case 403:
+            throw new ForbiddenError(_response.error.body, _response.rawResponse);
+          case 404:
+            throw new NotFoundError(_response.error.body, _response.rawResponse);
+          case 422:
+            throw new UnprocessableEntityError(_response.error.body, _response.rawResponse);
+          case 500:
+            throw new InternalServerError(_response.error.body, _response.rawResponse);
+          default:
+            throw new BrevoError({
+              statusCode: _response.error.statusCode,
+              body: _response.error.body,
+              rawResponse: _response.rawResponse
+            });
+        }
+      }
+      return handleNonStatusCodeError(_response.error, _response.rawResponse, "DELETE", "/loyalty/config/programs/{pid}/contact/{cid}");
+    });
+  }
+  /**
    * Publishes loyalty program
    *
    * @param {Brevo.PublishLoyaltyProgramRequest} request
@@ -98513,7 +98959,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__publishLoyaltyProgram(request2, requestOptions));
   }
   __publishLoyaltyProgram(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98578,7 +99024,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__subscribeMemberToASubscription(request2, requestOptions));
   }
   __subscribeMemberToASubscription(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest12(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98651,7 +99097,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteContactMembers(request2, requestOptions));
   }
   __deleteContactMembers(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, memberContactIds } = request2;
       const _queryParams = {
@@ -98721,7 +99167,7 @@ var ProgramClient = class {
     return HttpResponsePromise.fromPromise(this.__subscribeToLoyaltyProgram(request2, requestOptions));
   }
   __subscribeToLoyaltyProgram(request2, requestOptions) {
-    return __awaiter33(this, void 0, void 0, function* () {
+    return __awaiter34(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest12(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98774,7 +99220,7 @@ var ProgramClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/reward/client/Client.mjs
-var __awaiter34 = function(thisArg, _arguments, P, generator) {
+var __awaiter35 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -98838,7 +99284,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__getCodeCount(request2, requestOptions));
   }
   __getCodeCount(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, cpid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -98902,7 +99348,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__getRewardPageApi(request2, requestOptions));
   }
   __getRewardPageApi(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, limit, offset, state, version } = request2;
       const _queryParams = {
@@ -98976,7 +99422,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__createReward(request2, requestOptions));
   }
   __createReward(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest13(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -99042,7 +99488,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__createVoucher(request2, requestOptions));
   }
   __createVoucher(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest13(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -99113,7 +99559,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__redeemVoucher(request2, requestOptions));
   }
   __redeemVoucher(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest13(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -99189,7 +99635,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__completeRedeemTransaction(request2, requestOptions));
   }
   __completeRedeemTransaction(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, tid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -99255,7 +99701,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__revokeVouchers(request2, requestOptions));
   }
   __revokeVouchers(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, attributedRewardIds } = request2;
       const _queryParams = {
@@ -99316,7 +99762,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__validateReward(request2, requestOptions));
   }
   __validateReward(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest13(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -99386,7 +99832,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__getRewardInformation(request2, requestOptions));
   }
   __getRewardInformation(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, rid, version } = request2;
       const _queryParams = {
@@ -99458,7 +99904,7 @@ var RewardClient = class {
     return HttpResponsePromise.fromPromise(this.__getVoucherForAContact(request2, requestOptions));
   }
   __getVoucherForAContact(request2, requestOptions) {
-    return __awaiter34(this, void 0, void 0, function* () {
+    return __awaiter35(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, limit, offset, sort, sortField, contactId, metadata_key_value: metadataKeyValue, rewardId } = request2;
       const _queryParams = {
@@ -99515,7 +99961,7 @@ var RewardClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/senders/client/Client.mjs
-var __awaiter35 = function(thisArg, _arguments, P, generator) {
+var __awaiter36 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -99592,7 +100038,7 @@ var SendersClient = class {
     return HttpResponsePromise.fromPromise(this.__getSenders(request2, requestOptions));
   }
   __getSenders() {
-    return __awaiter35(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter36(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { ip, domain } = request2;
       const _queryParams = {
@@ -99692,7 +100138,7 @@ var SendersClient = class {
     return HttpResponsePromise.fromPromise(this.__createSender(request2, requestOptions));
   }
   __createSender(request2, requestOptions) {
-    return __awaiter35(this, void 0, void 0, function* () {
+    return __awaiter36(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -99755,7 +100201,7 @@ var SendersClient = class {
     return HttpResponsePromise.fromPromise(this.__getIps(requestOptions));
   }
   __getIps(requestOptions) {
-    return __awaiter35(this, void 0, void 0, function* () {
+    return __awaiter36(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -99858,7 +100304,7 @@ var SendersClient = class {
     return HttpResponsePromise.fromPromise(this.__updateSender(request2, requestOptions));
   }
   __updateSender(request2, requestOptions) {
-    return __awaiter35(this, void 0, void 0, function* () {
+    return __awaiter36(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { senderId } = request2, _body = __rest14(request2, ["senderId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -99923,7 +100369,7 @@ var SendersClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteSender(request2, requestOptions));
   }
   __deleteSender(request2, requestOptions) {
-    return __awaiter35(this, void 0, void 0, function* () {
+    return __awaiter36(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { senderId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -99988,7 +100434,7 @@ var SendersClient = class {
     return HttpResponsePromise.fromPromise(this.__getIpsFromSender(request2, requestOptions));
   }
   __getIpsFromSender(request2, requestOptions) {
-    return __awaiter35(this, void 0, void 0, function* () {
+    return __awaiter36(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { senderId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100059,7 +100505,7 @@ var SendersClient = class {
     return HttpResponsePromise.fromPromise(this.__validateSenderByOtp(request2, requestOptions));
   }
   __validateSenderByOtp(request2, requestOptions) {
-    return __awaiter35(this, void 0, void 0, function* () {
+    return __awaiter36(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { senderId } = request2, _body = __rest14(request2, ["senderId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100101,7 +100547,7 @@ var SendersClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/smsCampaigns/client/Client.mjs
-var __awaiter36 = function(thisArg, _arguments, P, generator) {
+var __awaiter37 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -100156,7 +100602,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSmsCampaigns(request2, requestOptions));
   }
   __getSmsCampaigns() {
-    return __awaiter36(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter37(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { status, startDate, endDate, limit, offset, sort } = request2;
       const _queryParams = {
@@ -100215,7 +100661,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__createSmsCampaign(request2, requestOptions));
   }
   __createSmsCampaign(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -100267,7 +100713,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSmsCampaign(request2, requestOptions));
   }
   __getSmsCampaign(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100319,7 +100765,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateSmsCampaign(request2, requestOptions));
   }
   __updateSmsCampaign(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2, _body = __rest15(request2, ["campaignId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100374,7 +100820,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteSmsCampaign(request2, requestOptions));
   }
   __deleteSmsCampaign(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100429,7 +100875,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__requestSmsRecipientExport(request2, requestOptions));
   }
   __requestSmsRecipientExport(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2, _body = __rest15(request2, ["campaignId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100488,7 +100934,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendSmsCampaignNow(request2, requestOptions));
   }
   __sendSmsCampaignNow(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100550,7 +100996,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendSmsReport(request2, requestOptions));
   }
   __sendSmsReport(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100605,7 +101051,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendTestSms(request2, requestOptions));
   }
   __sendTestSms(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2, _body = __rest15(request2, ["campaignId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100661,7 +101107,7 @@ var SmsCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateSmsCampaignStatus(request2, requestOptions));
   }
   __updateSmsCampaignStatus(request2, requestOptions) {
-    return __awaiter36(this, void 0, void 0, function* () {
+    return __awaiter37(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -100703,7 +101149,7 @@ var SmsCampaignsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/smsTemplates/client/Client.mjs
-var __awaiter37 = function(thisArg, _arguments, P, generator) {
+var __awaiter38 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -100747,7 +101193,7 @@ var SmsTemplatesClient = class {
     return HttpResponsePromise.fromPromise(this.__getSmsTemplates(request2, requestOptions));
   }
   __getSmsTemplates() {
-    return __awaiter37(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter38(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, sort } = request2;
       const _queryParams = {
@@ -100789,7 +101235,7 @@ var SmsTemplatesClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/tasks/client/Client.mjs
-var __awaiter38 = function(thisArg, _arguments, P, generator) {
+var __awaiter39 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -100846,7 +101292,7 @@ var TasksClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllTasks(request2, requestOptions));
   }
   __getAllTasks() {
-    return __awaiter38(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter39(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { "filter[type]": filterType, "filter[status]": filterStatus, "filter[date]": filterDate, "filter[assignTo]": filterAssignTo, "filter[contacts]": filterContacts, "filter[deals]": filterDeals, "filter[companies]": filterCompanies, dateFrom, dateTo, offset, limit, sort, sortBy } = request2;
       const _queryParams = {
@@ -100912,7 +101358,7 @@ var TasksClient = class {
     return HttpResponsePromise.fromPromise(this.__createATask(request2, requestOptions));
   }
   __createATask(request2, requestOptions) {
-    return __awaiter38(this, void 0, void 0, function* () {
+    return __awaiter39(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -100964,7 +101410,7 @@ var TasksClient = class {
     return HttpResponsePromise.fromPromise(this.__getATask(request2, requestOptions));
   }
   __getATask(request2, requestOptions) {
-    return __awaiter38(this, void 0, void 0, function* () {
+    return __awaiter39(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101016,7 +101462,7 @@ var TasksClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteATask(request2, requestOptions));
   }
   __deleteATask(request2, requestOptions) {
-    return __awaiter38(this, void 0, void 0, function* () {
+    return __awaiter39(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101068,7 +101514,7 @@ var TasksClient = class {
     return HttpResponsePromise.fromPromise(this.__updateATask(request2, requestOptions));
   }
   __updateATask(request2, requestOptions) {
-    return __awaiter38(this, void 0, void 0, function* () {
+    return __awaiter39(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { id } = request2, _body = __rest16(request2, ["id"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101117,7 +101563,7 @@ var TasksClient = class {
     return HttpResponsePromise.fromPromise(this.__getAllTaskTypes(requestOptions));
   }
   __getAllTaskTypes(requestOptions) {
-    return __awaiter38(this, void 0, void 0, function* () {
+    return __awaiter39(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -101148,7 +101594,7 @@ var TasksClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/tier/client/Client.mjs
-var __awaiter39 = function(thisArg, _arguments, P, generator) {
+var __awaiter40 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -101215,7 +101661,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__addSubscriptionToTier(request2, requestOptions));
   }
   __addSubscriptionToTier(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, cid, tid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101282,7 +101728,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__getListOfTierGroups(request2, requestOptions));
   }
   __getListOfTierGroups(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, version } = request2;
       const _queryParams = {
@@ -101350,7 +101796,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__createTierGroup(request2, requestOptions));
   }
   __createTierGroup(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid } = request2, _body = __rest17(request2, ["pid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101419,7 +101865,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__getTierGroup(request2, requestOptions));
   }
   __getTierGroup(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, gid, version } = request2;
       const _queryParams = {
@@ -101490,7 +101936,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__updateTierGroup(request2, requestOptions));
   }
   __updateTierGroup(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, gid } = request2, _body = __rest17(request2, ["pid", "gid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101558,7 +102004,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteTierGroup(request2, requestOptions));
   }
   __deleteTierGroup(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, gid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101575,7 +102021,7 @@ var TierClient = class {
         logging: this._options.logging
       });
       if (_response.ok) {
-        return { data: _response.body, rawResponse: _response.rawResponse };
+        return { data: void 0, rawResponse: _response.rawResponse };
       }
       if (_response.error.reason === "status-code") {
         switch (_response.error.statusCode) {
@@ -101626,7 +102072,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__createTierForTierGroup(request2, requestOptions));
   }
   __createTierForTierGroup(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, gid } = request2, _body = __rest17(request2, ["pid", "gid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101692,7 +102138,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__getLoyaltyProgramTier(request2, requestOptions));
   }
   __getLoyaltyProgramTier(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, version } = request2;
       const _queryParams = {
@@ -101762,7 +102208,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__updateTier(request2, requestOptions));
   }
   __updateTier(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, tid } = request2, _body = __rest17(request2, ["pid", "tid"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101829,7 +102275,7 @@ var TierClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteTier(request2, requestOptions));
   }
   __deleteTier(request2, requestOptions) {
-    return __awaiter39(this, void 0, void 0, function* () {
+    return __awaiter40(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { pid, tid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -101846,7 +102292,7 @@ var TierClient = class {
         logging: this._options.logging
       });
       if (_response.ok) {
-        return { data: _response.body, rawResponse: _response.rawResponse };
+        return { data: void 0, rawResponse: _response.rawResponse };
       }
       if (_response.error.reason === "status-code") {
         switch (_response.error.statusCode) {
@@ -101874,7 +102320,7 @@ var TierClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/transactionalEmails/client/Client.mjs
-var __awaiter40 = function(thisArg, _arguments, P, generator) {
+var __awaiter41 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -101929,7 +102375,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getTransacBlockedContacts(request2, requestOptions));
   }
   __getTransacBlockedContacts() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { startDate, endDate, limit, offset, senders, sort } = request2;
       const _queryParams = {
@@ -101990,7 +102436,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__unblockOrResubscribeATransactionalContact(request2, requestOptions));
   }
   __unblockOrResubscribeATransactionalContact(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { email } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -102038,7 +102484,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getBlockedDomains(requestOptions));
   }
   __getBlockedDomains(requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -102083,7 +102529,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__blockNewDomain(request2, requestOptions));
   }
   __blockNewDomain(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -102137,7 +102583,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteBlockedDomain(request2, requestOptions));
   }
   __deleteBlockedDomain(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { domain } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -102188,7 +102634,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteHardbounces(request2, requestOptions));
   }
   __deleteHardbounces() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -102266,7 +102712,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendTransacEmail(request2, requestOptions));
   }
   __sendTransacEmail() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -102320,7 +102766,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteScheduledEmailById(request2, requestOptions));
   }
   __deleteScheduledEmailById(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { identifier } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -102376,7 +102822,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getScheduledEmailById(request2, requestOptions));
   }
   __getScheduledEmailById(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { identifier, startDate, endDate, sort, status, limit, offset } = request2;
       const _queryParams = {
@@ -102435,7 +102881,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getTransacEmailsList(request2, requestOptions));
   }
   __getTransacEmailsList() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { email, templateId, messageId, startDate, endDate, sort, limit, offset } = request2;
       const _queryParams = {
@@ -102480,13 +102926,9 @@ var TransactionalEmailsClient = class {
     });
   }
   /**
-   * <Note title="How to get uuid?">
-   * You can get the uuid using either of the following methods:
-   *
+   * <Note title="How to get uuid">You can get the uuid using either of the following methods:
    * Send a GET request to https://api.brevo.com/v3/smtp/emails and pass the message_id in the url. Use your api-key to authenticate the request and you will get your uuid as a response.
-   *
-   * The uuid can also be fetched from the transactional logs page in your Brevo account, from the address URL.
-   * </Note>
+   * The uuid can also be fetched from the transactional logs page in your Brevo account, from the address URL.</Note>
    *
    * @param {Brevo.GetTransacEmailContentRequest} request
    * @param {TransactionalEmailsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -102500,7 +102942,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getTransacEmailContent(request2, requestOptions));
   }
   __getTransacEmailContent(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { uuid } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -102545,7 +102987,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteAnSmtpTransactionalLog(request2, requestOptions));
   }
   __deleteAnSmtpTransactionalLog(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { identifier } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -102596,7 +103038,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getAggregatedSmtpReport(request2, requestOptions));
   }
   __getAggregatedSmtpReport() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { startDate, endDate, days, tag } = request2;
       const _queryParams = {
@@ -102654,7 +103096,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getEmailEventReport(request2, requestOptions));
   }
   __getEmailEventReport() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, startDate, endDate, days, email, event, tags, messageId, templateId, sort } = request2;
       const _queryParams = {
@@ -102714,7 +103156,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSmtpReport(request2, requestOptions));
   }
   __getSmtpReport() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, startDate, endDate, days, tag, sort } = request2;
       const _queryParams = {
@@ -102772,7 +103214,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__postPreviewSmtpEmailTemplates(request2, requestOptions));
   }
   __postPreviewSmtpEmailTemplates(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -102824,7 +103266,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSmtpTemplates(request2, requestOptions));
   }
   __getSmtpTemplates() {
-    return __awaiter40(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { templateStatus, limit, offset, sort } = request2;
       const _queryParams = {
@@ -102881,7 +103323,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__createSmtpTemplate(request2, requestOptions));
   }
   __createSmtpTemplate(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -102933,7 +103375,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSmtpTemplate(request2, requestOptions));
   }
   __getSmtpTemplate(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { templateId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -102985,7 +103427,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateSmtpTemplate(request2, requestOptions));
   }
   __updateSmtpTemplate(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { templateId } = request2, _body = __rest18(request2, ["templateId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -103040,7 +103482,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteSmtpTemplate(request2, requestOptions));
   }
   __deleteSmtpTemplate(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { templateId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -103093,7 +103535,7 @@ var TransactionalEmailsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendTestTemplate(request2, requestOptions));
   }
   __sendTestTemplate(request2, requestOptions) {
-    return __awaiter40(this, void 0, void 0, function* () {
+    return __awaiter41(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { templateId, body: _body } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -103135,7 +103577,7 @@ var TransactionalEmailsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/transactionalSms/client/Client.mjs
-var __awaiter41 = function(thisArg, _arguments, P, generator) {
+var __awaiter42 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -103167,15 +103609,9 @@ var TransactionalSmsClient = class {
     this._options = normalizeClientOptionsWithAuth(options);
   }
   /**
-   * <Note>
-   * If the user includes stop code in the Transactional SMS, then it will be switched to Marketing SMS automatically and it will be interpreted as a Marketing SMS. To send Transactional SMS as Transactional, it is important not to use stop code.
-   *
-   * Note: For adding a stop code, client has to add reply STOP to [STOP_CODE] and the [STOP_CODE] will be replaced with the number.
-   * </Note>
-   *
-   * <Note title="For end users in France">
-   * Transactional SMS can be sent at any time without time restrictions. However, if a message is categorized as Marketing, it must adhere to specific time restrictions. Messages sent outside of these restricted hours will experience delays and will be processed during allowable times. Specifically, Marketing SMS cannot be processed between 10pm and 8am, on Sundays, and on French public holidays.
-   * </Note>
+   * <Note>If the user includes stop code in the Transactional SMS, then it will be switched to Marketing SMS automatically and it will be interpreted as a Marketing SMS. To send Transactional SMS as Transactional, it is important not to use stop code.
+   * Note: For adding a stop code, client has to add reply STOP to [STOP_CODE] and the [STOP_CODE] will be replaced with the number.</Note>
+   * <Note title="For end users in France">Transactional SMS can be sent at any time without time restrictions. However, if a message is categorized as Marketing, it must adhere to specific time restrictions. Messages sent outside of these restricted hours will experience delays and will be processed during allowable times. Specifically, Marketing SMS cannot be processed between 10pm and 8am, on Sundays, and on French public holidays.</Note>
    *
    * @param {Brevo.SendTransacSms} request
    * @param {TransactionalSmsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -103192,7 +103628,7 @@ var TransactionalSmsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendAsyncTransactionalSms(request2, requestOptions));
   }
   __sendAsyncTransactionalSms(request2, requestOptions) {
-    return __awaiter41(this, void 0, void 0, function* () {
+    return __awaiter42(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -103232,6 +103668,8 @@ var TransactionalSmsClient = class {
     });
   }
   /**
+   * @deprecated
+   *
    * @param {Brevo.SendTransacSms} request
    * @param {TransactionalSmsClient.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -103248,7 +103686,7 @@ var TransactionalSmsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendTransacSms(request2, requestOptions));
   }
   __sendTransacSms(request2, requestOptions) {
-    return __awaiter41(this, void 0, void 0, function* () {
+    return __awaiter42(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -103299,7 +103737,7 @@ var TransactionalSmsClient = class {
     return HttpResponsePromise.fromPromise(this.__getTransacAggregatedSmsReport(request2, requestOptions));
   }
   __getTransacAggregatedSmsReport() {
-    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter42(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { startDate, endDate, days, tag } = request2;
       const _queryParams = {
@@ -103355,7 +103793,7 @@ var TransactionalSmsClient = class {
     return HttpResponsePromise.fromPromise(this.__getSmsEvents(request2, requestOptions));
   }
   __getSmsEvents() {
-    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter42(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, startDate, endDate, offset, days, phoneNumber, event, tags, sort } = request2;
       const _queryParams = {
@@ -103413,7 +103851,7 @@ var TransactionalSmsClient = class {
     return HttpResponsePromise.fromPromise(this.__getTransacSmsReport(request2, requestOptions));
   }
   __getTransacSmsReport() {
-    return __awaiter41(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter42(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { startDate, endDate, days, tag, sort } = request2;
       const _queryParams = {
@@ -103457,7 +103895,7 @@ var TransactionalSmsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/transactionalWhatsApp/client/Client.mjs
-var __awaiter42 = function(thisArg, _arguments, P, generator) {
+var __awaiter43 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -103489,7 +103927,8 @@ var TransactionalWhatsAppClient = class {
     this._options = normalizeClientOptionsWithAuth(options);
   }
   /**
-   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below. [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
+   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
+   * [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
    * This endpoint is used to send a WhatsApp message. <br/>(**The first message you send using the API must contain a Template ID. You must create a template on WhatsApp on the Brevo platform to fetch the Template ID.**)
    *
    * @param {Brevo.SendWhatsappMessageRequest} request
@@ -103508,7 +103947,7 @@ var TransactionalWhatsAppClient = class {
     return HttpResponsePromise.fromPromise(this.__sendWhatsappMessage(request2, requestOptions));
   }
   __sendWhatsappMessage(request2, requestOptions) {
-    return __awaiter42(this, void 0, void 0, function* () {
+    return __awaiter43(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -103559,7 +103998,7 @@ var TransactionalWhatsAppClient = class {
     return HttpResponsePromise.fromPromise(this.__getWhatsappEventReport(request2, requestOptions));
   }
   __getWhatsappEventReport() {
-    return __awaiter42(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter43(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { limit, offset, startDate, endDate, days, contactNumber, event, sort } = request2;
       const _queryParams = {
@@ -103606,7 +104045,7 @@ var TransactionalWhatsAppClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/user/client/Client.mjs
-var __awaiter43 = function(thisArg, _arguments, P, generator) {
+var __awaiter44 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -103649,7 +104088,7 @@ var UserClient = class {
     return HttpResponsePromise.fromPromise(this.__getInvitedUsersList(requestOptions));
   }
   __getInvitedUsersList(requestOptions) {
-    return __awaiter43(this, void 0, void 0, function* () {
+    return __awaiter44(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -103697,7 +104136,7 @@ var UserClient = class {
     return HttpResponsePromise.fromPromise(this.__putRevokeUserPermission(request2, requestOptions));
   }
   __putRevokeUserPermission(request2, requestOptions) {
-    return __awaiter43(this, void 0, void 0, function* () {
+    return __awaiter44(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { email } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -103820,7 +104259,7 @@ var UserClient = class {
     return HttpResponsePromise.fromPromise(this.__inviteuser(request2, requestOptions));
   }
   __inviteuser(request2, requestOptions) {
-    return __awaiter43(this, void 0, void 0, function* () {
+    return __awaiter44(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -103872,7 +104311,7 @@ var UserClient = class {
     return HttpResponsePromise.fromPromise(this.__putresendcancelinvitation(request2, requestOptions));
   }
   __putresendcancelinvitation(request2, requestOptions) {
-    return __awaiter43(this, void 0, void 0, function* () {
+    return __awaiter44(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { action, email } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -103994,7 +104433,7 @@ var UserClient = class {
     return HttpResponsePromise.fromPromise(this.__editUserPermission(request2, requestOptions));
   }
   __editUserPermission(request2, requestOptions) {
-    return __awaiter43(this, void 0, void 0, function* () {
+    return __awaiter44(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -104045,7 +104484,7 @@ var UserClient = class {
     return HttpResponsePromise.fromPromise(this.__getUserPermission(request2, requestOptions));
   }
   __getUserPermission(request2, requestOptions) {
-    return __awaiter43(this, void 0, void 0, function* () {
+    return __awaiter44(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { email } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -104082,7 +104521,7 @@ var UserClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/webhooks/client/Client.mjs
-var __awaiter44 = function(thisArg, _arguments, P, generator) {
+var __awaiter45 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -104153,7 +104592,7 @@ var WebhooksClient = class {
     return HttpResponsePromise.fromPromise(this.__getWebhooks(request2, requestOptions));
   }
   __getWebhooks() {
-    return __awaiter44(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter45(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { type: type_, sort } = request2;
       const _queryParams = {
@@ -104220,7 +104659,7 @@ var WebhooksClient = class {
     return HttpResponsePromise.fromPromise(this.__createWebhook(request2, requestOptions));
   }
   __createWebhook(request2, requestOptions) {
-    return __awaiter44(this, void 0, void 0, function* () {
+    return __awaiter45(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -104257,22 +104696,16 @@ var WebhooksClient = class {
     });
   }
   /**
-   * <Note title="This feature is available for Professional and Enterprise plans">
-   * To have it activated please send us a request and we will activate it for your account.
+   * <Note>
+   * This is an enterprise feature. Contact us to activate it for your account.
    * </Note>
    *
-   * Exports webhook event history to CSV format for analysis and reporting.
+   * Submits a request to export webhook event history as a CSV file. The download link is sent to the `notifyURL` you provide in the request body.
    *
-   * Use this to:
-   * - Generate comprehensive webhook event reports
-   * - Analyze webhook delivery patterns and success rates
-   * - Export event data for external analysis tools
-   * - Create historical reports for compliance and auditing
-   * - Track webhook performance and reliability metrics
-   *
-   * Key information returned:
-   * - Process ID for tracking export completion
-   * - CSV file will be delivered to specified webhook URL
+   * Use this endpoint to:
+   * - Export webhook event history filtered by date range, event type, or email address
+   * - Generate reports for compliance, auditing, or performance analysis
+   * - Track delivery patterns and webhook reliability over time
    *
    * @param {Brevo.ExportWebhooksHistoryRequest} request
    * @param {WebhooksClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -104290,7 +104723,7 @@ var WebhooksClient = class {
     return HttpResponsePromise.fromPromise(this.__exportWebhooksHistory(request2, requestOptions));
   }
   __exportWebhooksHistory(request2, requestOptions) {
-    return __awaiter44(this, void 0, void 0, function* () {
+    return __awaiter45(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -104358,7 +104791,7 @@ var WebhooksClient = class {
     return HttpResponsePromise.fromPromise(this.__getWebhook(request2, requestOptions));
   }
   __getWebhook(request2, requestOptions) {
-    return __awaiter44(this, void 0, void 0, function* () {
+    return __awaiter45(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { webhookId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -104422,7 +104855,7 @@ var WebhooksClient = class {
     return HttpResponsePromise.fromPromise(this.__updateWebhook(request2, requestOptions));
   }
   __updateWebhook(request2, requestOptions) {
-    return __awaiter44(this, void 0, void 0, function* () {
+    return __awaiter45(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { webhookId } = request2, _body = __rest19(request2, ["webhookId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -104488,7 +104921,7 @@ var WebhooksClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteWebhook(request2, requestOptions));
   }
   __deleteWebhook(request2, requestOptions) {
-    return __awaiter44(this, void 0, void 0, function* () {
+    return __awaiter45(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { webhookId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -104527,7 +104960,7 @@ var WebhooksClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/api/resources/whatsAppCampaigns/client/Client.mjs
-var __awaiter45 = function(thisArg, _arguments, P, generator) {
+var __awaiter46 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
@@ -104582,7 +105015,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getWhatsAppCampaigns(request2, requestOptions));
   }
   __getWhatsAppCampaigns() {
-    return __awaiter45(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter46(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { startDate, endDate, limit, offset, sort } = request2;
       const _queryParams = {
@@ -104624,19 +105057,11 @@ var WhatsAppCampaignsClient = class {
     });
   }
   /**
-   * <Note>
-   * You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
-   *
-   * [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account
-   * </Note>
-   *
-   * <Note>
-   * This API requires the List and Segment ids as recipients in Body params. You can use the below Contact endpoints to get the required information.
-   *
+   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
+   * [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
+   * <Note>This API requires the List and Segment ids as recipients in Body params.You can use the below Contact endpoints to get the required information.
    * [Get all the Lists](https://developers.brevo.com/reference/getlists-1)
-   *
-   * [Get all the Segments](https://developers.brevo.com/reference/getsegments)
-   * </Note>
+   * [Get all the Segments](https://developers.brevo.com/reference/getsegments)</Note>
    *
    * @param {Brevo.CreateWhatsAppCampaignRequest} request
    * @param {WhatsAppCampaignsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -104655,7 +105080,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__createWhatsAppCampaign(request2, requestOptions));
   }
   __createWhatsAppCampaign(request2, requestOptions) {
-    return __awaiter45(this, void 0, void 0, function* () {
+    return __awaiter46(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -104692,11 +105117,8 @@ var WhatsAppCampaignsClient = class {
     });
   }
   /**
-   * <Note>
-   * You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
-   *
-   * [Activating WhatsApp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account
-   * </Note>
+   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
+   * [Activating WhatsApp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
    *
    * @param {WhatsAppCampaignsClient.RequestOptions} requestOptions - Request-specific configuration.
    *
@@ -104709,7 +105131,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getWhatsAppConfig(requestOptions));
   }
   __getWhatsAppConfig(requestOptions) {
-    return __awaiter45(this, void 0, void 0, function* () {
+    return __awaiter46(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -104743,11 +105165,8 @@ var WhatsAppCampaignsClient = class {
     });
   }
   /**
-   * <Note>
-   * You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
-   *
-   * [Activating WhatsApp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account
-   * </Note>
+   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
+   * [Activating WhatsApp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
    *
    * @param {Brevo.CreateWhatsAppTemplateRequest} request
    * @param {WhatsAppCampaignsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -104766,7 +105185,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__createWhatsAppTemplate(request2, requestOptions));
   }
   __createWhatsAppTemplate(request2, requestOptions) {
-    return __awaiter45(this, void 0, void 0, function* () {
+    return __awaiter46(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
       const _headers = mergeHeaders(_authRequest.headers, (_a3 = this._options) === null || _a3 === void 0 ? void 0 : _a3.headers, requestOptions === null || requestOptions === void 0 ? void 0 : requestOptions.headers);
@@ -104815,7 +105234,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getWhatsAppTemplates(request2, requestOptions));
   }
   __getWhatsAppTemplates() {
-    return __awaiter45(this, arguments, void 0, function* (request2 = {}, requestOptions) {
+    return __awaiter46(this, arguments, void 0, function* (request2 = {}, requestOptions) {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { startDate, endDate, limit, offset, sort, source } = request2;
       const _queryParams = {
@@ -104858,11 +105277,8 @@ var WhatsAppCampaignsClient = class {
     });
   }
   /**
-   * <Note>
-   * You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
-   *
-   * [Activating WhatsApp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account
-   * </Note>
+   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
+   * [Activating WhatsApp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
    *
    * @param {Brevo.SendWhatsAppTemplateApprovalRequest} request
    * @param {WhatsAppCampaignsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -104878,7 +105294,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__sendWhatsAppTemplateApproval(request2, requestOptions));
   }
   __sendWhatsAppTemplateApproval(request2, requestOptions) {
-    return __awaiter45(this, void 0, void 0, function* () {
+    return __awaiter46(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { templateId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -104913,11 +105329,11 @@ var WhatsAppCampaignsClient = class {
     });
   }
   /**
-   * <Note>
-   * You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
-   *
-   * [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account
-   * </Note>
+   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
+   * [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
+   * <Note>This API requires the List and Segment ids as recipients in Body params.You can use the below Contact endpoints to get the required information.
+   * [Get all the Lists](https://developers.brevo.com/reference/getlists-1)
+   * [Get all the Segments](https://developers.brevo.com/reference/getsegments)</Note>
    *
    * @param {Brevo.GetWhatsAppCampaignRequest} request
    * @param {WhatsAppCampaignsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -104934,7 +105350,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__getWhatsAppCampaign(request2, requestOptions));
   }
   __getWhatsAppCampaign(request2, requestOptions) {
-    return __awaiter45(this, void 0, void 0, function* () {
+    return __awaiter46(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -104971,19 +105387,11 @@ var WhatsAppCampaignsClient = class {
     });
   }
   /**
-   * <Note>
-   * You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
-   *
-   * [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account
-   * </Note>
-   *
-   * <Note>
-   * This API requires the List and Segment ids as recipients in Body params. You can use the below Contact endpoints to get the required information.
-   *
+   * <Note>You can use this API for WhatsApp only if you have setup your WhatsApp account on Brevo platform. To setup your WhatsApp account, follow the steps in the guide below.
+   * [Activating Whatsapp](https://developers.brevo.com/docs/whatsapp-campaigns-1) in your account</Note>
+   * <Note>This API requires the List and Segment ids as recipients in Body params.You can use the below Contact endpoints to get the required information.
    * [Get all the Lists](https://developers.brevo.com/reference/getlists-1)
-   *
-   * [Get all the Segments](https://developers.brevo.com/reference/getsegments)
-   * </Note>
+   * [Get all the Segments](https://developers.brevo.com/reference/getsegments)</Note>
    *
    * @param {Brevo.UpdateWhatsAppCampaignRequest} request
    * @param {WhatsAppCampaignsClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -104999,7 +105407,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__updateWhatsAppCampaign(request2, requestOptions));
   }
   __updateWhatsAppCampaign(request2, requestOptions) {
-    return __awaiter45(this, void 0, void 0, function* () {
+    return __awaiter46(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2, _body = __rest20(request2, ["campaignId"]);
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -105052,7 +105460,7 @@ var WhatsAppCampaignsClient = class {
     return HttpResponsePromise.fromPromise(this.__deleteWhatsAppCampaign(request2, requestOptions));
   }
   __deleteWhatsAppCampaign(request2, requestOptions) {
-    return __awaiter45(this, void 0, void 0, function* () {
+    return __awaiter46(this, void 0, void 0, function* () {
       var _a3, _b2, _c, _d, _e, _f, _g, _h, _j;
       const { campaignId } = request2;
       const _authRequest = yield this._options.authProvider.getAuthRequest();
@@ -105091,6 +105499,33 @@ var WhatsAppCampaignsClient = class {
 };
 
 // node_modules/@getbrevo/brevo/dist/esm/Client.mjs
+var __awaiter47 = function(thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function(resolve2) {
+      resolve2(value);
+    });
+  }
+  return new (P || (P = Promise))(function(resolve2, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e) {
+        reject(e);
+      }
+    }
+    function step(result) {
+      result.done ? resolve2(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+};
 var BrevoClient = class {
   constructor(options) {
     this._options = normalizeClientOptionsWithAuth(options);
@@ -105222,6 +105657,32 @@ var BrevoClient = class {
   get smsTemplates() {
     var _a3;
     return (_a3 = this._smsTemplates) !== null && _a3 !== void 0 ? _a3 : this._smsTemplates = new SmsTemplatesClient(this._options);
+  }
+  /**
+   * Make a passthrough request using the SDK's configured auth, retry, logging, etc.
+   * This is useful for making requests to endpoints not yet supported in the SDK.
+   * The input can be a URL string, URL object, or Request object. Relative paths are resolved against the configured base URL.
+   *
+   * @param {Request | string | URL} input - The URL, path, or Request object.
+   * @param {RequestInit} init - Standard fetch RequestInit options.
+   * @param {core.PassthroughRequest.RequestOptions} requestOptions - Per-request overrides (timeout, retries, headers, abort signal).
+   * @returns {Promise<Response>} A standard Response object.
+   */
+  fetch(input, init3, requestOptions) {
+    return __awaiter47(this, void 0, void 0, function* () {
+      var _a3;
+      return makePassthroughRequest(input, init3, {
+        baseUrl: (_a3 = this._options.baseUrl) !== null && _a3 !== void 0 ? _a3 : this._options.environment,
+        headers: this._options.headers,
+        timeoutInSeconds: this._options.timeoutInSeconds,
+        maxRetries: this._options.maxRetries,
+        fetch: this._options.fetch,
+        logging: this._options.logging,
+        getAuthHeaders: () => __awaiter47(this, void 0, void 0, function* () {
+          return (yield this._options.authProvider.getAuthRequest()).headers;
+        })
+      }, requestOptions);
+    });
   }
 };
 
