@@ -1,9 +1,16 @@
 import Fastify from "fastify";
 import "./sentry";
 import dotenv from "dotenv";
+import minimist from "minimist";
 import httpRoutes from "./http";
 
-dotenv.config();
+const argv = minimist(process.argv.slice(2));
+const clientFlag = Object.keys(argv).find(k => k !== '_' && argv[k] === true);
+const envFile = argv.env || (clientFlag ? `.env.${clientFlag}` : ".env");
+dotenv.config({ path: envFile });
+
+const port = Number(process.env.PORT);
+if (!port) throw new Error("PORT environment variable is required");
 
 const fastify = Fastify({
   logger:
@@ -18,18 +25,13 @@ const fastify = Fastify({
             },
           },
         }
-      : true, // default logger in production
+      : true,
 });
 
 const start = async () => {
   try {
-    // register routes
     fastify.register(httpRoutes);
-
-    // start server
-    const port = Number(process.env.PORT) || 3000;
     await fastify.listen({ port, host: "0.0.0.0" });
-
     console.log(`Server running on port ${port}`);
   } catch (err) {
     fastify.log.error(err);
