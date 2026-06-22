@@ -1,15 +1,8 @@
 # Lookup
 
-A small Node.js Fastify service to check if an email is already subscribed to your newsletter.
-
-## Features
-
-- Lookup if an email is already subscribed (`/lookup`)
-- Returns structured result, built with TypeScript
+A small Node.js/Fastify service to check if an email is already subscribed to a newsletter. Supports Brevo and ActiveCampaign backends.
 
 ## Installation
-
-Clone the repo and install dependencies:
 
 ```bash
 git clone <repo-url>
@@ -17,31 +10,44 @@ cd lookup
 npm install
 ```
 
-Create a `.env` file, BREVO_KEY is needed.
+Create a `.env` file (see [Environment Variables](#environment-variables) below).
 
 ## Development
 
-Start the server in development mode:
-
 ```bash
-npm run dev
+npm run dev           # start with .env
+npm run dev -- --org_name  # start with .env.org_name
+npm run dev -- --env=.env.org_name  # start with explicit path
 ```
 
-### Test Lookup
+## Environment Variables
 
-You can test the lookup endpoint:
+Required in every `.env`:
 
-```bash
-curl -X POST "http://localhost:5001/lookup?email=brucewayne@example.com"
-```
+- `TYPE` — CRM backend: `brevo` or `activecampaign`
+- `PORT` — port to listen on
 
-or
+**Brevo** (`TYPE=brevo`):
 
-```bash
-node src/test.ts brucewayne@example.com
-```
+- `BREVO_KEY` — Brevo API key
+- `BREVO_LIST_ID` — numeric list ID to check membership against
 
-Example response if subscribed:
+**ActiveCampaign** (`TYPE=activecampaign`):
+
+- `API_KEY` — ActiveCampaign API token
+- `API_URL` — account URL (e.g. `https://account.api-us1.com`)
+- `API_LIST_ID` — (optional) list ID; if omitted, only contact existence is checked
+
+**Optional:**
+
+- `SENTRY_DSN` — Sentry error reporting (production only)
+- `NODE_ENV` — `development` enables pretty logging; `production` enables Sentry
+
+## Endpoints
+
+`POST /lookup?email=<email>` or `GET /lookup?email=<email>`
+
+**Subscribed:**
 
 ```json
 {
@@ -53,38 +59,31 @@ Example response if subscribed:
 }
 ```
 
-If not subscribed:
+**Not subscribed / not found:**
 
 ```json
 {}
 ```
 
-## Build for Production
+## Testing
+
+Start the server with one of the pre-configured env files:
 
 ```bash
-npm run build
+npm run dev -- --orgname
 ```
 
-This will compile TypeScript into `dist/`.
-
-Run production server:
+Then in another terminal, use curl or the included test script (reads `PORT` from the env file automatically):
 
 ```bash
-node dist/server.js
+curl -X POST "http://localhost:<port>/lookup?email=user@example.com"
+
+npx tsx src/test.ts user@example.com --orgname
 ```
 
-## Deployment
+## Production Build
 
-TBD
-
-## Endpoints
-
-- `POST /lookup?email=<email>` – Returns subscription status for the given email.
-
-## Notes
-
-- It is implemented only for LC
-
-## Extending for other organizations
-
-Looks like that elixir when using lookup can pass data other than just email - supporter_id, org_id, action_page_id, and custom_fields (needs to be confirmed). This allows implementing org-specific logic in the future without changing the core. For example, we could branch behavior based on org_id or apply custom rules per organization while still using the same endpoint for the basic email subscription check.
+```bash
+npm run build        # bundles to dist/server.js
+npm run start:prod   # runs with NODE_ENV=production
+```
