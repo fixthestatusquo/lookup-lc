@@ -32,6 +32,10 @@ const start = async () => {
   try {
     fastify.register(httpRoutes);
     await fastify.listen({ port, host: "0.0.0.0" });
+    if (process.env.TYPE === "local") {
+      const { startWorker } = await import("./worker/index");
+      startWorker();
+    }
     console.log(`Server running on port ${port}`);
   } catch (err) {
     fastify.log.error(err);
