@@ -1,6 +1,3 @@
-import { brevoLookup } from "./brevo";
-import { activeCampaignLookup } from "./activecampaign";
-
 const getType = () => {
   const type = process.env.TYPE;
   if (!type) throw new Error("TYPE environment variable is required");
@@ -10,12 +7,20 @@ const getType = () => {
 export const lookup = async (email: string): Promise<boolean> => {
   const type = getType();
   switch (type) {
-    case "brevo":
+    case "brevo": {
+      const { brevoLookup } = await import("./brevo");
       return brevoLookup(email);
-    case "activecampaign":
+    }
+    case "activecampaign": {
+      const { activeCampaignLookup } = await import("./activecampaign");
       return activeCampaignLookup(email);
+    }
+    case "local": {
+      const { localLookup } = await import("./local");
+      return localLookup(email);
+    }
     default:
-      throw new Error(`Unknown TYPE "${type}". Supported: brevo, activecampaign`);
+      throw new Error(`Unknown TYPE "${type}". Supported: brevo, activecampaign, local`);
   }
 };
 
