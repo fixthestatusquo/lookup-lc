@@ -1,7 +1,7 @@
 import schedule from "node-schedule";
 import { sync } from "./sync";
 
-const CRON = process.env.WORKER_CRON ?? "0 */12 * * *";
+const CRON = process.env.WORKER_CRON ?? "0 10 * * *";
 
 export const startWorker = () => {
   sync().catch(console.error);

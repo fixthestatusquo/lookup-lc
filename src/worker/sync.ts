@@ -53,5 +53,5 @@ export const sync = async () => {
   });
 
   replace(hashes);
-  console.log(`Synced ${hashes.length} hashes`);
+  console.log(`Synced ${hashes.length} hashes at ${new Date().toISOString()}`);
 };
