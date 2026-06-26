@@ -1,5 +1,5 @@
 import { BrevoClient } from "@getbrevo/brevo";
-import { captureError } from "../sentry";
+import { captureError } from "../sentry.ts";
 
 let client: BrevoClient | null = null;
 let listId: number | null = null;

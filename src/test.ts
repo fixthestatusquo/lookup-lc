@@ -8,8 +8,8 @@ dotenv.config({ path: envFile });
 
 const email = argv._[0];
 if (!email) {
-  console.error("Usage: tsx src/test.ts <email> --<clientname>");
-  console.error("       tsx src/test.ts <email> --env=.env.lc");
+  console.error("Usage: node src/test.ts <email> --<clientname>");
+  console.error("       node src/test.ts <email> --env=.env.lc");
   process.exit(1);
 }
 

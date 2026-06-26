@@ -2,7 +2,7 @@ import * as ftp from "basic-ftp";
 import { readFileSync, unlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import db from "../db";
+import db from "../db.ts";
 
 const fetchViaFtp = async (): Promise<string[]> => {
   const client = new ftp.Client();

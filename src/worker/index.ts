@@ -1,5 +1,5 @@
 import schedule from "node-schedule";
-import { sync } from "./sync";
+import { sync } from "./sync.ts";
 
 const CRON = process.env.WORKER_CRON ?? "0 10 * * *";
 

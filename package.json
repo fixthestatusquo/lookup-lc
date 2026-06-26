@@ -2,8 +2,9 @@
   "name": "@proca/lookup",
   "version": "3.0.0",
   "main": "dist/server.js",
+  "type": "module",
   "scripts": {
-    "dev": "tsx src/server.ts",
+    "dev": "node src/server.ts",
     "build": "NODE_ENV=production node esbuild.config.js",
     "start": "node dist/server.js",
     "start:prod": "NODE_ENV=production node dist/server.js",

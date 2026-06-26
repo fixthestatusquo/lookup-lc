@@ -8,15 +8,15 @@ export const lookup = async (email: string): Promise<boolean> => {
   const type = getType();
   switch (type) {
     case "brevo": {
-      const { brevoLookup } = await import("./brevo");
+      const { brevoLookup } = await import("./brevo.ts");
       return brevoLookup(email);
     }
     case "activecampaign": {
-      const { activeCampaignLookup } = await import("./activecampaign");
+      const { activeCampaignLookup } = await import("./activecampaign.ts");
       return activeCampaignLookup(email);
     }
     case "local": {
-      const { localLookup } = await import("./local");
+      const { localLookup } = await import("./local.ts");
       return localLookup(email);
     }
     default:

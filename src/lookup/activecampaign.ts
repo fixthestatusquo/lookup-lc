@@ -1,4 +1,4 @@
-import { captureError } from "../sentry";
+import { captureError } from "../sentry.ts";
 
 const getConfig = () => {
   const key = process.env.API_KEY;
