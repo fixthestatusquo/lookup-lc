@@ -1,3 +1,6 @@
+// Run worker manually
+// Usage: npx tsx src/worker/run.ts --<orgname>
+// Example: npx tsx src/worker/run.ts --duh
 import minimist from "minimist";
 import dotenv from "dotenv";
 
