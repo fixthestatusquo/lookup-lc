@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 
-const dbPath = process.env.DB_PATH ?? "./emails.db";
+const dbPath = process.env.DB_PATH ?? "./hashes.db";
 
 const db = new Database(dbPath);
 

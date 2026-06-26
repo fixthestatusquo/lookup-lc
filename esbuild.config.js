@@ -11,5 +11,5 @@ esbuild.build({
   outfile: "dist/server.js",
   sourcemap: !isProd,
   minify: isProd,
-  external: [],
+  external: ["better-sqlite3"],
 }).catch(() => process.exit(1));
