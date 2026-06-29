@@ -6,7 +6,7 @@ const db = new Database(dbPath);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS hashes (
-    hash TEXT PRIMARY KEY
+    hash BLOB PRIMARY KEY
   )
 `);
 

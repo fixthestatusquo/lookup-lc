@@ -44,14 +44,15 @@ const fetchHashes = async (): Promise<string[]> => {
 };
 
 export const sync = async () => {
-  const hashes = await fetchHashes();
+  const hexHashes = await fetchHashes();
+  const blobs = hexHashes.map((h) => Buffer.from(h, "hex"));
 
-  const replace = db.transaction((hashes: string[]) => {
+  const replace = db.transaction((blobs: Buffer[]) => {
     db.exec("DELETE FROM hashes");
     const insert = db.prepare("INSERT INTO hashes (hash) VALUES (?)");
-    for (const hash of hashes) insert.run(hash);
+    for (const blob of blobs) insert.run(blob);
   });
 
-  replace(hashes);
-  console.log(`Synced ${hashes.length} hashes at ${new Date().toISOString()}`);
+  replace(blobs);
+  console.log(`Synced ${blobs.length} hashes at ${new Date().toISOString()}`);
 };
