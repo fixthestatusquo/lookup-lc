@@ -4,9 +4,12 @@ A small Node.js/Fastify service to check if an email is already subscribed to a 
 
 ## Installation
 
+Requires Node.js 24+ (use `nvm use` to activate the pinned version).
+
 ```bash
 git clone <repo-url>
 cd lookup
+nvm use
 npm install
 ```
 
@@ -87,7 +90,7 @@ Then in another terminal, use curl or the included test script (reads `PORT` fro
 ```bash
 curl -X POST "http://localhost:<port>/lookup?email=user@example.com"
 
-npx tsx src/test.ts user@example.com --orgname
+node src/test.ts user@example.com --orgname
 ```
 
 ## Local backend: manual sync
@@ -95,7 +98,7 @@ npx tsx src/test.ts user@example.com --orgname
 To trigger a one-off hash sync without starting the server:
 
 ```bash
-npx tsx src/worker/run.ts --orgname
+./src/worker/run.ts --orgname
 ```
 
 ## Production Build
