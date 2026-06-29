@@ -1,12 +1,15 @@
 # Lookup
 
-A small Node.js/Fastify service to check if an email is already subscribed to a newsletter. Supports Brevo and ActiveCampaign backends.
+A small Node.js/Fastify service to check if an email is already subscribed to a newsletter. Supports Brevo, ActiveCampaign, and local hash DB backends.
 
 ## Installation
+
+Requires Node.js 24+ (use `nvm use` to activate the pinned version).
 
 ```bash
 git clone <repo-url>
 cd lookup
+nvm use
 npm install
 ```
 
@@ -24,7 +27,7 @@ npm run dev -- --env=.env.org_name  # start with explicit path
 
 Required in every `.env`:
 
-- `TYPE` — CRM backend: `brevo` or `activecampaign`
+- `TYPE` — backend: `brevo`, `activecampaign`, or `local`
 - `PORT` — port to listen on
 
 **Brevo** (`TYPE=brevo`):
@@ -37,6 +40,15 @@ Required in every `.env`:
 - `API_KEY` — ActiveCampaign API token
 - `API_URL` — account URL (e.g. `https://account.api-us1.com`)
 - `API_LIST_ID` — (optional) list ID; if omitted, only contact existence is checked
+
+**Local hash DB** (`TYPE=local`):
+
+- `FETCH_METHOD` — how to fetch hashes: `ftp`
+- `FTP_HOST` — FTP server hostname
+- `FTP_USER` — FTP username
+- `FTP_PASS` — FTP password
+- `DB_PATH` — (optional) path to SQLite file; defaults to `./hashes.db`
+- `WORKER_CRON` — (optional) sync schedule; defaults to `0 10 * * *` (daily at 10am)
 
 **Optional:**
 
@@ -78,7 +90,15 @@ Then in another terminal, use curl or the included test script (reads `PORT` fro
 ```bash
 curl -X POST "http://localhost:<port>/lookup?email=user@example.com"
 
-npx tsx src/test.ts user@example.com --orgname
+node src/test.ts user@example.com --orgname
+```
+
+## Local backend: manual sync
+
+To trigger a one-off hash sync without starting the server:
+
+```bash
+./src/worker/run.ts --orgname
 ```
 
 ## Production Build

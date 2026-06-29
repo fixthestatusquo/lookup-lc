@@ -1,8 +1,8 @@
 import Fastify from "fastify";
-import "./sentry";
+import "./sentry.ts";
 import dotenv from "dotenv";
 import minimist from "minimist";
-import httpRoutes from "./http";
+import httpRoutes from "./http.ts";
 
 const argv = minimist(process.argv.slice(2));
 const clientFlag = Object.keys(argv).find(k => k !== '_' && argv[k] === true);
@@ -32,6 +32,10 @@ const start = async () => {
   try {
     fastify.register(httpRoutes);
     await fastify.listen({ port, host: "0.0.0.0" });
+    if (process.env.TYPE === "local") {
+      const { startWorker } = await import("./worker/index.ts");
+      startWorker();
+    }
     console.log(`Server running on port ${port}`);
   } catch (err) {
     fastify.log.error(err);
