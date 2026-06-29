@@ -1,6 +1,7 @@
+#!/usr/bin/env node
 // Run worker manually
-// Usage: node src/worker/run.ts --<orgname>
-// Example: node src/worker/run.ts --duh
+// Usage: ./src/worker/run.ts --<orgname>
+// Example: ./src/worker/run.ts --duh
 import minimist from "minimist";
 import dotenv from "dotenv";
 
