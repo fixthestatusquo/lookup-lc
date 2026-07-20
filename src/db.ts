@@ -1,6 +1,9 @@
 import Database from "better-sqlite3";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 const dbPath = process.env.DB_PATH ?? "./hashes.db";
+mkdirSync(dirname(dbPath), { recursive: true });
 
 const db = new Database(dbPath);
 
