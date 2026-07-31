@@ -3,9 +3,10 @@ import "./sentry.ts";
 import dotenv from "dotenv";
 import minimist from "minimist";
 import httpRoutes from "./http.ts";
+import { configureContentTypeParsing } from "./plugins/content-type.ts";
 
 const argv = minimist(process.argv.slice(2));
-const clientFlag = Object.keys(argv).find(k => k !== '_' && argv[k] === true);
+const clientFlag = Object.keys(argv).find((k) => k !== "_" && argv[k] === true);
 const envFile = argv.env || (clientFlag ? `.env.${clientFlag}` : ".env");
 dotenv.config({ path: envFile });
 
@@ -30,6 +31,8 @@ const fastify = Fastify({
 
 const start = async () => {
   try {
+    // Json parser is used for all content types
+    configureContentTypeParsing(fastify);
     fastify.register(httpRoutes);
     await fastify.listen({ port, host: "0.0.0.0" });
     if (process.env.TYPE === "local") {

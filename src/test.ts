@@ -16,17 +16,40 @@ if (!email) {
 const port = process.env.PORT;
 if (!port) throw new Error(`PORT not set — check ${envFile}`);
 
-const testLookup = async (email: string) => {
+const baseUrl = `http://localhost:${port}/lookup`;
+
+const runCase = async (label: string, url: string, init?: RequestInit) => {
   try {
-    const res = await fetch(
-      `http://localhost:${port}/lookup?email=${encodeURIComponent(email)}`,
-      { method: "POST" },
-    );
+    const res = await fetch(url, init);
     const data = await res.json();
-    console.log("Response for", email, ":", data);
+    console.log(`[${label}] status ${res.status}:`, data);
   } catch (err) {
-    console.error("Error calling lookup:", err);
+    console.error(`[${label}] error:`, err);
   }
+};
+
+const testLookup = async (email: string) => {
+  const encoded = encodeURIComponent(email);
+
+  await runCase("GET, query param", `${baseUrl}?email=${encoded}`, {
+    method: "GET",
+  });
+
+  await runCase("POST, no body, query param", `${baseUrl}?email=${encoded}`, {
+    method: "POST",
+  });
+
+  await runCase("POST, JSON body, application/json", baseUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  await runCase("POST, JSON body, text/plain", baseUrl, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ email }),
+  });
 };
 
 testLookup(email);
